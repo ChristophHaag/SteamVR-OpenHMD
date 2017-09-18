@@ -1,0 +1,11 @@
+{
+	"alwaysActivate": true,
+	"name" : "openhmd",
+	"directory" : "",
+	"resourceOnly" : false,
+
+	"hmd_presence" :
+	[
+		"*.*"
+	]
+}

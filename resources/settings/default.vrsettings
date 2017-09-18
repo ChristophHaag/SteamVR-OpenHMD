@@ -1,0 +1,7 @@
+{
+   "driver_sample" : {
+      "enable" : true,
+      "secondsFromVsyncToPhotons" : 0.011,
+      "displayFrequency" : 0
+   }
+}

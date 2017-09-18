@@ -1,0 +1,16 @@
+{
+   "jsonid" : "vrsettings",
+   "driver_lighthouse": {
+		"enable": false
+	},
+   "driver_oculus": {
+		"enable": false
+	},
+   "driver_oculus_legacy": {
+		"enable": false
+	},
+   "driver_openhmd" : {
+		 "enable": true
+   },
+   "version" : "1"
+}
