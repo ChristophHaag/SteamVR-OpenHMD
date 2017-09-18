@@ -47,6 +47,7 @@ add_library(driver_openhmd SHARED
 target_link_libraries(driver_openhmd
   ${CMAKE_DL_LIBS}
   ${OPENHMD_LINK_DIR}/libopenhmd.a
+  hidapi-hidraw #TODO: why do I need to link this
 )
 # don't add lib prefix to driver_openhmd.so
 SET_TARGET_PROPERTIES(driver_openhmd PROPERTIES PREFIX "")
