@@ -1,4 +1,4 @@
-SteamVR Plugin for OpenHMD Devices
+SteamVR Plugin for OpenHMD Drivers
 
 Build with cmake:
 
@@ -12,8 +12,6 @@ Run:
 First register the driver with SteamVR:
 
     ~/.local/share/Steam/SteamApps/common/SteamVR/bin/linux64/vrpathreg adddriver ~/SteamVR-OpenHMD/build
-
-if you build in a separate build directory.
 
 The directory given to vrpathreg should contain `driver.vrdrivermanifest` and `bin/linux64/driver_openhmd.so` as a subdirectory.
 
