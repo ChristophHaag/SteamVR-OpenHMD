@@ -5,7 +5,8 @@ MESSAGE("Install to ${OPENHMD_DESTDIR}")
 
 ExternalProject_Add(
   openhmd
-  GIT_REPOSITORY https://github.com/OpenHMD/OpenHMD.git
+#  GIT_REPOSITORY https://github.com/OpenHMD/OpenHMD.git
+  GIT_REPOSITORY https://github.com/ChristophHaag/OpenHMD.git
   INSTALL_COMMAND "" 
   LOG_DOWNLOAD 1
 )
