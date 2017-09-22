@@ -1,0 +1,3 @@
+[submodule "external/openhmd"]
+	path = external/openhmd
+	url = https://github.com/OpenHMD/OpenHMD.git

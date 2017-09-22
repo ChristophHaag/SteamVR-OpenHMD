@@ -2,11 +2,14 @@ SteamVR Plugin for OpenHMD Drivers
 
 Build with cmake:
 
+    git clone --recursive https://github.com/ChristophHaag/SteamVR-OpenHMD.git
     cd SteamVR-OpenHMD
     mkdir build
     cd build
     cmake ..
     make
+
+OpenHMD is included as a git submodule. An OpenHMD shared library will be built first and the steamvr plugin will link to this OpenHMD build first. If you want to package the SteamVR plugin, make sure you have libopenhmd.so in your library search path or package the openhmd library too and change the rpath.
 
 Run:
 First register the driver with SteamVR:
