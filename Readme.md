@@ -9,16 +9,16 @@ Build with cmake:
     cmake ..
     make
 
-OpenHMD is included as a git submodule. An OpenHMD shared library will be built first and the steamvr plugin will link to this OpenHMD build first. If you want to package the SteamVR plugin, make sure you have libopenhmd.so in your library search path or package the openhmd library too and change the rpath.
+OpenHMD is included as a git submodule. An OpenHMD shared library will be built first and the steamvr plugin will link to the OpenHMD library built in `build/external/openhmd/libopenhmd.so`. If you want to package the SteamVR plugin, make sure you have libopenhmd.so in your library search path or package the openhmd library too and change the rpath.
 
-If you use the Vive and want to use the (imperfect) values from https://github.com/OpenHMD/OpenHMD/pull/90, go to external/openhmd and run `git pull origin pull/90/head` before the make step to merge the pull requst locally.
+If you use the Vive and want to use the (imperfect) values from https://github.com/OpenHMD/OpenHMD/pull/90, go to external/openhmd and run `git pull origin pull/90/head` before the make step to merge the pull request locally.
 
 Run:
 First register the driver with SteamVR:
 
     ~/.local/share/Steam/SteamApps/common/SteamVR/bin/linux64/vrpathreg adddriver ~/SteamVR-OpenHMD/build
 
-The directory given to vrpathreg should contain `driver.vrdrivermanifest` and `bin/linux64/driver_openhmd.so` as a subdirectory.
+The directory given to vrpathreg should contain `driver.vrdrivermanifest`, `resources/` and `bin/linux64/driver_openhmd.so`.
 
 If you use a HMD for which SteamVR already has a plugin (currently Vive and Oculus Rift), copy the steamvr.vrsettings file that disables those plugins into Steam's config directory.
 
