@@ -22,7 +22,7 @@ The directory given to vrpathreg should contain `driver.vrdrivermanifest`, `reso
 
 If you use a HMD for which SteamVR already has a plugin (currently Vive and Oculus Rift), copy the steamvr.vrsettings file that disables those plugins into Steam's config directory.
 
-    cp ~/SteamVR-OpenHMD/steamvr/steamvr.vrsettings ~/.local/share/Steam/config/steamvr.vrsettings
+    cp ~/SteamVR-OpenHMD/steamvr.vrsettings ~/.local/share/Steam/config/steamvr.vrsettings
 
 Don't forget to make a backup if you have special SteamVR settings.
 
