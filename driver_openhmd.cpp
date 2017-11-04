@@ -29,6 +29,10 @@ using namespace vr;
 #error "Unsupported Platform."
 #endif
 
+ohmd_context* ctx;
+ohmd_device* hmd;
+
+
 // gets float values from the device and prints them
 void print_infof(ohmd_device* hmd, const char* name, int len, ohmd_float_value val)
 {
@@ -137,34 +141,41 @@ void CWatchdogDriver_OpenHMD::Cleanup()
 
 class COpenHMDDeviceDriverController : public vr::ITrackedDeviceServerDriver, public vr::IVRControllerComponent {
 public:
-
     int index;
     COpenHMDDeviceDriverController(int index) : index(index) {
+        DriverLog("construct controller object %d\n", index);
 
     }
     virtual EVRInitError Activate( vr::TrackedDeviceIndex_t unObjectId )
     {
+        DriverLog("activate controller %d\n, unObjectId");
         m_unObjectId = unObjectId;
+        
         return VRInitError_None;
     }
 
     virtual void Deactivate()
     {
+        DriverLog("deactivate controller\n");
         m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
     }
 
     virtual void EnterStandby()
     {
+                DriverLog("standby controller\n");
     }
 
     void *GetComponent( const char *pchComponentNameAndVersion )
     {
-
+        DriverLog("get controller component %s | %s ", pchComponentNameAndVersion, vr::IVRControllerComponent_Version);
         if (!strcmp(pchComponentNameAndVersion, vr::IVRControllerComponent_Version))
         {
+            DriverLog(": yes\n");
             return (vr::IVRControllerComponent*)this;
+
         }
 
+        DriverLog(": no\n");
         return NULL;
     }
 
@@ -177,13 +188,14 @@ public:
 
     DriverPose_t GetPose()
     {
+        DriverLog("get controller pose\n");
         DriverPose_t pose = { 0 };
         pose.poseIsValid = true;
         pose.result = TrackingResult_Running_OK;
         pose.deviceIsConnected = true;
 
         //TODO: Wait until openhmd controller api https://github.com/OpenHMD/OpenHMD/pull/93 gets merged
-        /*
+        
         ohmd_ctx_update(ctx);
 
         //TODO: why inverted?
@@ -201,17 +213,20 @@ public:
         pose.vecPosition[2] = pos[2];
 
         //printf("ohmd rotation quat %f %f %f %f\n", quat[0], quat[1], quat[2], quat[3]);
-        */
+        
 
         pose.qWorldFromDriverRotation = identityquat;
         pose.qDriverFromHeadRotation = identityquat;
+        
+        DriverLog("driver_openhmd: Pose values %f %f %f %f\n", pose.qWorldFromDriverRotation.w, pose.qWorldFromDriverRotation.x, pose.qWorldFromDriverRotation.y, pose.qWorldFromDriverRotation.z);
 
         return pose;
     }
 
     VRControllerState_t controllerstate;
     VRControllerState_t GetControllerState() {
-        return controllerstate;
+        DriverLog("get controller state\n");
+        //return controllerstate;
 
         controllerstate.unPacketNum = controllerstate.unPacketNum + 1;
         /* //TODO: buttons
@@ -244,11 +259,14 @@ public:
         return false;
     }
 
-    std::string GetSerialNumber() const { return m_sSerialNumber; }
+    std::string GetSerialNumber() const { 
+        DriverLog("get controller serial number %s\n", m_sSerialNumber);
+        return m_sSerialNumber;
+    }
 
     bool exists() {
         //TODO: return false when there's no controller with the given index
-        return false;
+        return true;
     }
 
 private:
@@ -261,8 +279,6 @@ private:
 class COpenHMDDeviceDriver : public vr::ITrackedDeviceServerDriver, public vr::IVRDisplayComponent
 {
 public:
-    ohmd_context* ctx;
-    ohmd_device* hmd;
 	COpenHMDDeviceDriver(  )
 	{
                 ctx = ohmd_ctx_create();
@@ -505,19 +521,55 @@ public:
 
 	virtual void GetProjectionRaw( EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom ) 
 	{
-            float sep;
-            ohmd_device_getf(hmd, OHMD_LENS_HORIZONTAL_SEPARATION, &sep); //mabye use this
+        //http://stackoverflow.com/questions/10830293/ddg#12926655
+        float ohmdprojection[16];
+        float hc[4];
             if (eEye == Eye_Left) {
-                *pfLeft = -1.0;
-                *pfRight = 1.0;
-                *pfTop = -1.0;
-                *pfBottom = 1.0;
+                ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
+                /*
+                hc[0] = -1.39429057 ;
+                hc[1] = 1.24479818;
+                hc[2] = -1.46762812;
+                hc[3] = 1.46626210;
+                */
             } else {
-                *pfLeft = -1.0;
-                *pfRight = 1.0;
-                *pfTop = -1.0;
-                *pfBottom = 1.0;
+                ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
+                /*
+                hc[0] = -1.25054884;
+                hc[1] = 1.39798033;
+                hc[2] = -1.46976602;
+                hc[3] = 1.47319007;
+                */
             }
+            
+            /*
+                near   = m23/(m22-1);
+                far    = m23/(m22+1);
+                bottom = near * (m12-1)/m11;
+                top    = near * (m12+1)/m11;
+                left   = near * (m02-1)/m00;
+                right  = near * (m02+1)/m00;
+             */
+            
+            /*
+            float near   = ohmdprojection[14]/(ohmdprojection[10]-1);
+            float far    = ohmdprojection[14]/(ohmdprojection[10]+1);
+            *pfBottom = near * (ohmdprojection[9]-1)/ohmdprojection[5];
+            *pfTop    = near * (ohmdprojection[9]+1)/ohmdprojection[5];
+            *pfLeft  = near * (ohmdprojection[8]-1)/ohmdprojection[0];
+            *pfRight  = near * (ohmdprojection[8]+1)/ohmdprojection[0];
+            */
+            
+            float near   = ohmdprojection[11]/(ohmdprojection[10]-1);
+            float far    = ohmdprojection[11]/(ohmdprojection[10]+1);
+            *pfBottom = near * (ohmdprojection[6]-1)/ohmdprojection[5];
+            *pfTop    = near * (ohmdprojection[6]+1)/ohmdprojection[5];
+            *pfLeft  = near * (ohmdprojection[2]-1)/ohmdprojection[0];
+            *pfRight  = near * (ohmdprojection[2]+1)/ohmdprojection[0];
+            
+            
+            //DriverLog("is: %f %f %d %f; should: %f %f %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, hc[0], hc[1], hc[2], hc[3]);
+        
 	}
 
 	virtual DistortionCoordinates_t ComputeDistortion( EVREye eEye, float fU, float fV ) 
@@ -735,6 +787,8 @@ HMD_DLL_EXPORT void *HmdDriverFactory( const char *pInterfaceName, int *pReturnC
 	{
 		return &g_watchdogDriverOpenHMD;
 	}
+	
+    DriverLog("no interface %s\n", pInterfaceName);
 
 	if( pReturnCode )
 		*pReturnCode = VRInitError_Init_InterfaceNotFound;
