@@ -567,6 +567,10 @@ public:
             *pfLeft  = near * (ohmdprojection[2]-1)/ohmdprojection[0];
             *pfRight  = near * (ohmdprojection[2]+1)/ohmdprojection[0];
             
+            // swap top and bottom because steamvr is upside down
+            float temp = *pfTop;
+            *pfTop = *pfBottom;
+            *pfBottom = temp;
             
             //DriverLog("is: %f %f %d %f; should: %f %f %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, hc[0], hc[1], hc[2], hc[3]);
         
