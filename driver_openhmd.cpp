@@ -1,5 +1,7 @@
 //============ Copyright (c) Valve Corporation, All rights reserved. ============
 
+#include "ohmd_config.h" // which hmds and trackers to use
+
 #include <openvr_driver.h>
 #include "driverlog.h"
 
@@ -31,11 +33,11 @@ using namespace vr;
 #endif
 
 ohmd_context* ctx;
-ohmd_device* hmd;
-ohmd_device* lcontroller;
-ohmd_device* rcontroller;
+ohmd_device* hmd = NULL;
+ohmd_device* hmdtracker = NULL;
+ohmd_device* lcontroller = NULL;
+ohmd_device* rcontroller = NULL;
 
-ohmd_device* tempnolo;
 
 class COpenHMDDeviceDriverController;
 COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerL;
@@ -273,8 +275,7 @@ public:
     }
 
     bool exists() {
-        //TODO: return false when there's no controller with the given index
-        return true;
+        return index == 0 ? lcontroller != NULL : rcontroller != NULL;
     }
 
 private:
@@ -300,13 +301,18 @@ public:
                     DriverLog("  path:    %s\n\n", ohmd_list_gets(ctx, i, OHMD_PATH));
                 }
 
-                // Open default device (0)
-                hmd = ohmd_list_open_device(ctx, 0);
-                tempnolo = ohmd_list_open_device(ctx, 1);
-                lcontroller = ohmd_list_open_device(ctx, 2); // TODO: actual index
-                rcontroller = ohmd_list_open_device(ctx, 3);
+                int hmddisplay = get_configvalues()[0];
+                int hmdtrackerindex = get_configvalues()[1];
+                int leftcontroller = get_configvalues()[2];
+                int rightcontroller = get_configvalues()[3];
 
-                
+                DriverLog("Using HMD Display %d, HMD Tracker %d, Left Controller %d, Right Controller %d\n", hmddisplay, hmdtrackerindex, leftcontroller, rightcontroller);
+                hmd = ohmd_list_open_device(ctx, hmddisplay);
+
+                if (hmdtrackerindex != -1 && hmdtrackerindex != hmddisplay) hmdtracker = ohmd_list_open_device(ctx, hmdtrackerindex);
+                if (leftcontroller != -1) lcontroller = ohmd_list_open_device(ctx, leftcontroller);
+                if (rightcontroller != -1) rcontroller = ohmd_list_open_device(ctx, rightcontroller);
+
                 if(!hmd){
                     DriverLog("failed to open device: %s\n", ohmd_ctx_get_error(ctx));
                 }
@@ -334,29 +340,29 @@ public:
 		m_ulPropertyContainer = vr::k_ulInvalidPropertyContainer;
 
 		DriverLog( "Using settings values\n" );
-                ohmd_device_getf(hmd, OHMD_EYE_IPD, &m_flIPD);
+        ohmd_device_getf(hmd, OHMD_EYE_IPD, &m_flIPD);
 
 		char buf[1024];
-                strcpy(buf, ohmd_list_gets(ctx, 0, OHMD_PRODUCT)); //whatever
-                strcat(buf, ": ");
-                strcat(buf, ohmd_list_gets(ctx, 0, OHMD_PATH));
-		m_sSerialNumber = buf;
+        strcpy(buf, ohmd_list_gets(ctx, 0, OHMD_PRODUCT)); //whatever
+        strcat(buf, ": ");
+        strcat(buf, ohmd_list_gets(ctx, 0, OHMD_PATH));
+        m_sSerialNumber = buf;
 
-                strcpy(buf, "OpenHMD: ");
-                strcat(buf, ohmd_list_gets(ctx, 0, OHMD_PRODUCT));
-                m_sModelNumber = buf;
+        strcpy(buf, "OpenHMD: ");
+        strcat(buf, ohmd_list_gets(ctx, 0, OHMD_PRODUCT));
+        m_sModelNumber = buf;
 
-                m_nWindowX = 1920; //TODO: real window offset
+        m_nWindowX = 1920; //TODO: real window offset
 		m_nWindowY = 0;
-                ohmd_device_geti(hmd, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &m_nWindowWidth);
-                ohmd_device_geti(hmd, OHMD_SCREEN_VERTICAL_RESOLUTION, &m_nWindowHeight );
-                ohmd_device_geti(hmd, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &m_nRenderWidth);
-                ohmd_device_geti(hmd, OHMD_SCREEN_VERTICAL_RESOLUTION, &m_nRenderHeight );
-                //m_nRenderWidth /= 2;
-                //m_nRenderHeight /= 2;
+        ohmd_device_geti(hmd, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &m_nWindowWidth);
+        ohmd_device_geti(hmd, OHMD_SCREEN_VERTICAL_RESOLUTION, &m_nWindowHeight );
+        ohmd_device_geti(hmd, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &m_nRenderWidth);
+        ohmd_device_geti(hmd, OHMD_SCREEN_VERTICAL_RESOLUTION, &m_nRenderHeight );
+        //m_nRenderWidth /= 2;
+        //m_nRenderHeight /= 2;
 
-                m_flSecondsFromVsyncToPhotons = vr::VRSettings()->GetFloat( k_pch_Sample_Section, k_pch_Sample_SecondsFromVsyncToPhotons_Float );
-                //TODO: find actual frequency somehow (from openhmd?)
+        m_flSecondsFromVsyncToPhotons = vr::VRSettings()->GetFloat( k_pch_Sample_Section, k_pch_Sample_SecondsFromVsyncToPhotons_Float );
+        //TODO: find actual frequency somehow (from openhmd?)
 		m_flDisplayFrequency = vr::VRSettings()->GetFloat( k_pch_Sample_Section, k_pch_Sample_DisplayFrequency_Float );
 
 		DriverLog( "driver_openhmd: Serial Number: %s\n", m_sSerialNumber.c_str() );
@@ -367,9 +373,9 @@ public:
                                                 DriverLog( "driver_openhmd: Display Frequency: %f\n", m_flDisplayFrequency );
 		DriverLog( "driver_openhmd: IPD: %f\n", m_flIPD );
 
-                float distortion_coeffs[4];
-                ohmd_device_getf(hmd, OHMD_UNIVERSAL_DISTORTION_K, &(distortion_coeffs[0]));
-                DriverLog("driver_openhmd: Distortion values a=%f b=%f c=%f d=%f\n", distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3]);
+        float distortion_coeffs[4];
+        ohmd_device_getf(hmd, OHMD_UNIVERSAL_DISTORTION_K, &(distortion_coeffs[0]));
+        DriverLog("driver_openhmd: Distortion values a=%f b=%f c=%f d=%f\n", distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3]);
 	}
 
 	virtual ~COpenHMDDeviceDriver()
@@ -533,7 +539,6 @@ public:
 	{
         //http://stackoverflow.com/questions/10830293/ddg#12926655
         float ohmdprojection[16];
-        float hc[4];
             if (eEye == Eye_Left) {
                 ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
             } else {
@@ -644,23 +649,24 @@ public:
 		pose.result = TrackingResult_Running_OK;
 		pose.deviceIsConnected = true;
 
+        ohmd_device* d = hmdtracker ? hmdtracker : hmd;
                 ohmd_ctx_update(ctx);
                 
                 float quat[4];
-                ohmd_device_getf(tempnolo, OHMD_ROTATION_QUAT, quat);
+                ohmd_device_getf(d, OHMD_ROTATION_QUAT, quat);
                 pose.qRotation.x = quat[0];
                 pose.qRotation.y = quat[1];
                 pose.qRotation.z = quat[2];
                 pose.qRotation.w = quat[3];
 
                 float pos[3];
-                ohmd_device_getf(tempnolo, OHMD_POSITION_VECTOR, pos);
+                ohmd_device_getf(d, OHMD_POSITION_VECTOR, pos);
                 pose.vecPosition[0] = pos[0];
                 pose.vecPosition[1] = pos[1];
                 pose.vecPosition[2] = pos[2];
 
-                printf("%f %f %f %f  %f %f %f\n", quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
-                fflush(stdout);
+                //printf("%f %f %f %f  %f %f %f\n", quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
+                //fflush(stdout);
                 //DriverLog("get hmd pose %f %f %f %f, %f %f %f\n", quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
                 
                 pose.qWorldFromDriverRotation = identityquat;
