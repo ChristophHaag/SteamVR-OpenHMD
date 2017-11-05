@@ -43,8 +43,9 @@ Example content:
     rightcontroller 3
 
 This defines 4 openhmd devices.
-hmdddisplay is opened for the display config. Choose this for the actual HMD like Vive, Oculus Rift, etc.
-hmdtracker is opened for tracking the head. Choose a different index than the HMD if you have a NOLO tracker (or in the future a Vive tracker).
-leftcontroller and rightcontroller are the indices for the controllers. There are no separate trackers for controllers for now but it's easy to hack in.
+
+* hmdddisplay is opened for the display config. Choose this for the actual HMD like Vive, Oculus Rift, etc.
+* hmdtracker is opened for tracking the head. Choose a different index than the HMD if you have a NOLO tracker (or in the future a Vive tracker).
+* leftcontroller and rightcontroller are the indices for the controllers. There are no separate trackers for controllers for now but it's easy to hack in.
 
 If the config file is not available (probably only works on linux), default values are used. Change them in ohmd_config.h.
