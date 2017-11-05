@@ -535,16 +535,86 @@ public:
 		}
 	}
 
+	//explicit so it's easy to see what's happening:
+	int f1(int i, int j) {
+            if (i == 0 && j == 0) return 0;
+            if (i == 0 && j == 1) return 1;
+            if (i == 0 && j == 2) return 2;
+            if (i == 0 && j == 3) return 3;
+
+            if (i == 1 && j == 0) return 4;
+            if (i == 1 && j == 1) return 5;
+            if (i == 1 && j == 2) return 6;
+            if (i == 1 && j == 3) return 7;
+
+            if (i == 2 && j == 0) return 8;
+            if (i == 2 && j == 1) return 9;
+            if (i == 2 && j == 2) return 10;
+            if (i == 2 && j == 3) return 11;
+
+            if (i == 3 && j == 0) return 12;
+            if (i == 3 && j == 1) return 13;
+            if (i == 3 && j == 2) return 14;
+            if (i == 3 && j == 3) return 15;
+
+            return -1;
+        }
+
+        int f2(int i, int j) {
+            if (i == 0 && j == 0) return 0;
+            if (i == 0 && j == 1) return 4;
+            if (i == 0 && j == 2) return 8;
+            if (i == 0 && j == 3) return 12;
+
+            if (i == 1 && j == 0) return 1;
+            if (i == 1 && j == 1) return 5;
+            if (i == 1 && j == 2) return 9;
+            if (i == 1 && j == 3) return 13;
+
+            if (i == 2 && j == 0) return 2;
+            if (i == 2 && j == 1) return 6;
+            if (i == 2 && j == 2) return 10;
+            if (i == 2 && j == 3) return 14;
+
+            if (i == 3 && j == 0) return 3;
+            if (i == 3 && j == 1) return 7;
+            if (i == 3 && j == 2) return 11;
+            if (i == 3 && j == 3) return 15;
+
+            return -1;
+        }
+
+
 	virtual void GetProjectionRaw( EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom ) 
 	{
         //http://stackoverflow.com/questions/10830293/ddg#12926655
         float ohmdprojection[16];
+        float hc[4];
             if (eEye == Eye_Left) {
                 ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
+                hc[0] = -1.39429057; hc[1] = 1.24479818; hc[2] = 1.46762812; hc[3] = -1.46626210;
             } else {
                 ohmd_device_getf(hmd, OHMD_RIGHT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
+                hc[0] = -1.25054884; hc[1] = 1.39798033; hc[2] = 1.46976602; hc[3] = -1.47319007;
             }
-            
+
+            *pfLeft = hc[0];
+            *pfRight = hc[1];
+            *pfTop = -hc[2];
+            *pfBottom = -hc[3];
+            //return;
+
+            float m00 = ohmdprojection[f1(0,0)];
+            float m03 = ohmdprojection[f1(0,3)];
+            float m10 = ohmdprojection[f1(1,3)];
+            float m11 = ohmdprojection[f1(1,1)];
+            float m13 = ohmdprojection[f1(1,3)];
+            float m23 = ohmdprojection[f1(2,3)];
+            float m22 = ohmdprojection[f1(2,2)];
+            float m12 = ohmdprojection[f1(1,2)];
+            float m02 = ohmdprojection[f1(0,2)];
+
+
             /* orthographic
                 near   =  (1+m23)/m22;
                 far    = -(1-m23)/m22;
@@ -553,15 +623,24 @@ public:
                 left   = -(1+m03)/m00;
                 right  =  (1-m03)/m00;
              */
+/*
+                float near   =  (1+m23)/m22;
+                float far    = -(1-m23)/m22;
+                *pfBottom    =  (1-m13)/m11;
+                *pfTop       = -(1+m13)/m11;
+                *pfLeft      = -(1+m03)/m00;
+                *pfRight     =  (1-m03)/m00;
+*/
 
-                float near   =  (1+ohmdprojection[11])/ohmdprojection[10];
-                float far    = -(1-ohmdprojection[11])/ohmdprojection[10];
-                *pfBottom =  (1-ohmdprojection[7])/ohmdprojection[5];
-                *pfTop    = -(1+ohmdprojection[7])/ohmdprojection[5];
-                *pfLeft   = -(1+ohmdprojection[3])/ohmdprojection[0];
-                *pfRight  =  (1-ohmdprojection[3])/ohmdprojection[0];
+                float near   = m23/(m22-1);
+                float far    = m23/(m22+1);
+                *pfBottom = -  (m12-1)/m11;
+                *pfTop    = -  (m12+1)/m11;
+                *pfLeft   =    (m02-1)/m00;
+                *pfRight  =    (m02+1)/m00;
 
-            //DriverLog("is: %f %f %d %f; should: %f %f %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, hc[0], hc[1], hc[2], hc[3]);
+
+            DriverLog("is: %f %f, %f %f %f %f; should: %f %f %f %f\n", near, far, *pfLeft, *pfRight, *pfTop, *pfBottom, hc[0], hc[1], hc[2], hc[3]);
         
 	}
 
