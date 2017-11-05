@@ -49,3 +49,9 @@ This defines 4 openhmd devices.
 * leftcontroller and rightcontroller are the indices for the controllers. There are no separate trackers for controllers for now but it's easy to hack in.
 
 If the config file is not available (probably only works on linux), default values are used. Change them in ohmd_config.h.
+
+# TODO
+
+controller buttons
+
+steamvr & vector acceleration values?
