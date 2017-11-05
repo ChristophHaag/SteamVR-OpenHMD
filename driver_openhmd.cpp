@@ -15,6 +15,7 @@
 #include <openhmd.h>
 
 #include <math.h>
+#include <stdio.h>
 
 using namespace vr;
 
@@ -31,6 +32,14 @@ using namespace vr;
 
 ohmd_context* ctx;
 ohmd_device* hmd;
+ohmd_device* lcontroller;
+ohmd_device* rcontroller;
+
+ohmd_device* tempnolo;
+
+class COpenHMDDeviceDriverController;
+COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerL;
+COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerR;
 
 
 // gets float values from the device and prints them
@@ -138,26 +147,30 @@ void CWatchdogDriver_OpenHMD::Cleanup()
 	CleanupDriverLog();
 }
 
-
+vr::TrackedDeviceIndex_t lcindex;
+vr::TrackedDeviceIndex_t rcindex;
 class COpenHMDDeviceDriverController : public vr::ITrackedDeviceServerDriver, public vr::IVRControllerComponent {
 public:
     int index;
     COpenHMDDeviceDriverController(int index) : index(index) {
         DriverLog("construct controller object %d\n", index);
-
+        this->index = index;
     }
     virtual EVRInitError Activate( vr::TrackedDeviceIndex_t unObjectId )
     {
-        DriverLog("activate controller %d\n, unObjectId");
-        m_unObjectId = unObjectId;
-        
+        DriverLog("activate controller %d: %d\n", index, unObjectId);
+        if (index == 0) {
+            lcindex = unObjectId;
+        } else {
+            rcindex = unObjectId;
+        }
         return VRInitError_None;
     }
 
     virtual void Deactivate()
     {
         DriverLog("deactivate controller\n");
-        m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
+        //m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
     }
 
     virtual void EnterStandby()
@@ -188,39 +201,34 @@ public:
 
     DriverPose_t GetPose()
     {
-        DriverLog("get controller pose\n");
-        DriverPose_t pose = { 0 };
-        pose.poseIsValid = true;
-        pose.result = TrackingResult_Running_OK;
-        pose.deviceIsConnected = true;
+		DriverPose_t pose = { 0 };
+		pose.poseIsValid = true;
+		pose.result = TrackingResult_Running_OK;
+		pose.deviceIsConnected = true;
 
-        //TODO: Wait until openhmd controller api https://github.com/OpenHMD/OpenHMD/pull/93 gets merged
-        
-        ohmd_ctx_update(ctx);
+            ohmd_device* d = index == 0 ? lcontroller : rcontroller;
+            
+                ohmd_ctx_update(ctx);
 
-        //TODO: why inverted?
-        float quat[4];
-        ohmd_device_getf(hmd, OHMD_ROTATION_QUAT, quat);
-        pose.qRotation.x = quat[0];
-        pose.qRotation.y = quat[1];
-        pose.qRotation.z = quat[2];
-        pose.qRotation.w = quat[3];
+                float quat[4];
+                ohmd_device_getf(d, OHMD_ROTATION_QUAT, quat);
+                pose.qRotation.x = quat[0];
+                pose.qRotation.y = quat[1];
+                pose.qRotation.z = quat[2];
+                pose.qRotation.w = quat[3];
 
-        float pos[3];
-        ohmd_device_getf(hmd, OHMD_POSITION_VECTOR, pos);
-        pose.vecPosition[0] = pos[0];
-        pose.vecPosition[1] = pos[1];
-        pose.vecPosition[2] = pos[2];
+                float pos[3];
+                ohmd_device_getf(d, OHMD_POSITION_VECTOR, pos);
+                pose.vecPosition[0] = pos[0];
+                pose.vecPosition[1] = pos[1];
+                pose.vecPosition[2] = pos[2];
 
-        //printf("ohmd rotation quat %f %f %f %f\n", quat[0], quat[1], quat[2], quat[3]);
-        
+                //DriverLog("get controller %d pose %f %f %f %f, %f %f %f\n", index, quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
 
-        pose.qWorldFromDriverRotation = identityquat;
-        pose.qDriverFromHeadRotation = identityquat;
-        
-        DriverLog("driver_openhmd: Pose values %f %f %f %f\n", pose.qWorldFromDriverRotation.w, pose.qWorldFromDriverRotation.x, pose.qWorldFromDriverRotation.y, pose.qWorldFromDriverRotation.z);
+                pose.qWorldFromDriverRotation = identityquat;
+                pose.qDriverFromHeadRotation = identityquat;
 
-        return pose;
+		return pose;
     }
 
     VRControllerState_t controllerstate;
@@ -260,7 +268,7 @@ public:
     }
 
     std::string GetSerialNumber() const { 
-        DriverLog("get controller serial number %s\n", m_sSerialNumber);
+        DriverLog("get controller serial number %s\n", m_sSerialNumber.c_str());
         return m_sSerialNumber;
     }
 
@@ -270,8 +278,6 @@ public:
     }
 
 private:
-    vr::TrackedDeviceIndex_t m_unObjectId;
-
     std::string m_sSerialNumber = "Controller serial number " + std::to_string(index);
     std::string m_sModelNumber = "Controller model number " + std::to_string(index);
 };
@@ -296,7 +302,11 @@ public:
 
                 // Open default device (0)
                 hmd = ohmd_list_open_device(ctx, 0);
+                tempnolo = ohmd_list_open_device(ctx, 1);
+                lcontroller = ohmd_list_open_device(ctx, 2); // TODO: actual index
+                rcontroller = ohmd_list_open_device(ctx, 3);
 
+                
                 if(!hmd){
                     DriverLog("failed to open device: %s\n", ohmd_ctx_get_error(ctx));
                 }
@@ -663,14 +673,14 @@ public:
                 ohmd_ctx_update(ctx);
 
                 float quat[4];
-                ohmd_device_getf(hmd, OHMD_ROTATION_QUAT, quat);
+                ohmd_device_getf(tempnolo, OHMD_ROTATION_QUAT, quat);
                 pose.qRotation.x = quat[0];
                 pose.qRotation.y = quat[1];
                 pose.qRotation.z = quat[2];
                 pose.qRotation.w = quat[3];
 
                 float pos[3];
-                ohmd_device_getf(hmd, OHMD_POSITION_VECTOR, pos);
+                ohmd_device_getf(tempnolo, OHMD_POSITION_VECTOR, pos);
                 pose.vecPosition[0] = pos[0];
                 pose.vecPosition[1] = pos[1];
                 pose.vecPosition[2] = pos[2];
@@ -692,6 +702,8 @@ public:
 		if ( m_unObjectId != vr::k_unTrackedDeviceIndexInvalid )
 		{
 			vr::VRServerDriverHost()->TrackedDevicePoseUpdated( m_unObjectId, GetPose(), sizeof( DriverPose_t ) );
+            vr::VRServerDriverHost()->TrackedDevicePoseUpdated( lcindex, m_OpenHMDDeviceDriverControllerL->GetPose(), sizeof( DriverPose_t ) );
+            vr::VRServerDriverHost()->TrackedDevicePoseUpdated( rcindex, m_OpenHMDDeviceDriverControllerR->GetPose(), sizeof( DriverPose_t ) );
 		}
 	}
 
@@ -736,8 +748,6 @@ public:
 
 private:
 	COpenHMDDeviceDriver *m_OpenHMDDeviceDriver;
-        COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerL;
-        COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerR;
 };
 
 CServerDriver_OpenHMD g_serverDriverOpenHMD;
