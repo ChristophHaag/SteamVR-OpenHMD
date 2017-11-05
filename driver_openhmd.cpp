@@ -536,52 +536,26 @@ public:
         float hc[4];
             if (eEye == Eye_Left) {
                 ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
-                /*
-                hc[0] = -1.39429057 ;
-                hc[1] = 1.24479818;
-                hc[2] = -1.46762812;
-                hc[3] = 1.46626210;
-                */
             } else {
                 ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
-                /*
-                hc[0] = -1.25054884;
-                hc[1] = 1.39798033;
-                hc[2] = -1.46976602;
-                hc[3] = 1.47319007;
-                */
             }
             
-            /*
-                near   = m23/(m22-1);
-                far    = m23/(m22+1);
-                bottom = near * (m12-1)/m11;
-                top    = near * (m12+1)/m11;
-                left   = near * (m02-1)/m00;
-                right  = near * (m02+1)/m00;
+            /* orthographic
+                near   =  (1+m23)/m22;
+                far    = -(1-m23)/m22;
+                bottom =  (1-m13)/m11;
+                top    = -(1+m13)/m11;
+                left   = -(1+m03)/m00;
+                right  =  (1-m03)/m00;
              */
-            
-            /*
-            float near   = ohmdprojection[14]/(ohmdprojection[10]-1);
-            float far    = ohmdprojection[14]/(ohmdprojection[10]+1);
-            *pfBottom = near * (ohmdprojection[9]-1)/ohmdprojection[5];
-            *pfTop    = near * (ohmdprojection[9]+1)/ohmdprojection[5];
-            *pfLeft  = near * (ohmdprojection[8]-1)/ohmdprojection[0];
-            *pfRight  = near * (ohmdprojection[8]+1)/ohmdprojection[0];
-            */
-            
-            float near   = ohmdprojection[11]/(ohmdprojection[10]-1);
-            float far    = ohmdprojection[11]/(ohmdprojection[10]+1);
-            *pfBottom = near * (ohmdprojection[6]-1)/ohmdprojection[5];
-            *pfTop    = near * (ohmdprojection[6]+1)/ohmdprojection[5];
-            *pfLeft  = near * (ohmdprojection[2]-1)/ohmdprojection[0];
-            *pfRight  = near * (ohmdprojection[2]+1)/ohmdprojection[0];
-            
-            // swap top and bottom because steamvr is upside down
-            float temp = *pfTop;
-            *pfTop = *pfBottom;
-            *pfBottom = temp;
-            
+
+                float near   =  (1+ohmdprojection[11])/ohmdprojection[10];
+                float far    = -(1-ohmdprojection[11])/ohmdprojection[10];
+                *pfBottom =  (1-ohmdprojection[7])/ohmdprojection[5];
+                *pfTop    = -(1+ohmdprojection[7])/ohmdprojection[5];
+                *pfLeft   = -(1+ohmdprojection[3])/ohmdprojection[0];
+                *pfRight  =  (1-ohmdprojection[3])/ohmdprojection[0];
+
             //DriverLog("is: %f %f %d %f; should: %f %f %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, hc[0], hc[1], hc[2], hc[3]);
         
 	}
@@ -671,7 +645,7 @@ public:
 		pose.deviceIsConnected = true;
 
                 ohmd_ctx_update(ctx);
-
+                
                 float quat[4];
                 ohmd_device_getf(tempnolo, OHMD_ROTATION_QUAT, quat);
                 pose.qRotation.x = quat[0];
@@ -685,8 +659,10 @@ public:
                 pose.vecPosition[1] = pos[1];
                 pose.vecPosition[2] = pos[2];
 
-                //printf("ohmd rotation quat %f %f %f %f\n", quat[0], quat[1], quat[2], quat[3]);
-
+                printf("%f %f %f %f  %f %f %f\n", quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
+                fflush(stdout);
+                //DriverLog("get hmd pose %f %f %f %f, %f %f %f\n", quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
+                
                 pose.qWorldFromDriverRotation = identityquat;
                 pose.qDriverFromHeadRotation = identityquat;
 
