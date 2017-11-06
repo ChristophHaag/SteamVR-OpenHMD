@@ -535,7 +535,7 @@ public:
 		}
 	}
 
-	//explicit so it's easy to see what's happening:
+	// flatten 2D indices in a 4x4 matrix explicit so it's easy to see what's happening:
 	int f1(int i, int j) {
             if (i == 0 && j == 0) return 0;
             if (i == 0 && j == 1) return 1;
@@ -585,24 +585,19 @@ public:
         }
 
 
-	virtual void GetProjectionRaw( EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom ) 
+	virtual void GetProjectionRaw( EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom )
 	{
-        //http://stackoverflow.com/questions/10830293/ddg#12926655
-        float ohmdprojection[16];
-        float hc[4];
+            float ohmdprojection[16];
             if (eEye == Eye_Left) {
                 ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
-                hc[0] = -1.39429057; hc[1] = 1.24479818; hc[2] = 1.46762812; hc[3] = -1.46626210;
             } else {
                 ohmd_device_getf(hmd, OHMD_RIGHT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
-                hc[0] = -1.25054884; hc[1] = 1.39798033; hc[2] = 1.46976602; hc[3] = -1.47319007;
             }
 
-            *pfLeft = hc[0];
-            *pfRight = hc[1];
-            *pfTop = -hc[2];
-            *pfBottom = -hc[3];
-            //return;
+            // http://stackoverflow.com/questions/10830293/ddg#12926655
+            // get projection matrix from openhmd, convert it into lrtb + near,far with SO formula
+            // then divide by near plane distance to get the tangents of the angles from the center plane (tan = opposite side = these values divided by adjacent side = near plane distance)
+            // but negate top and bottom. who knows why. there are 3 or so issues for it on github
 
             // f2 switches row-major and column-major
             float m00 = ohmdprojection[f2(0,0)];
@@ -622,7 +617,7 @@ public:
             *pfLeft   =     (m02-1)/m00;
             *pfRight  =     (m02+1)/m00;
 
-            DriverLog("is: %f %f %f %f; should: %f %f %f %f  | %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, hc[0], hc[1], hc[2], hc[3], near, far);
+            DriverLog("projectionraw values lrtb, near far: %f %f %f %f | %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, near, far);
 	}
 
 	virtual DistortionCoordinates_t ComputeDistortion( EVREye eEye, float fU, float fV ) 
