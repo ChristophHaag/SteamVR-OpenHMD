@@ -614,34 +614,14 @@ public:
             float m12 = ohmdprojection[f1(1,2)];
             float m02 = ohmdprojection[f1(0,2)];
 
+            float near   = m23/(m22-1);
+            float far    = m23/(m22+1);
+            *pfBottom = -   (m12-1)/m11;
+            *pfTop    = -   (m12+1)/m11;
+            *pfLeft   =     (m02-1)/m00;
+            *pfRight  =     (m02+1)/m00;
 
-            /* orthographic
-                near   =  (1+m23)/m22;
-                far    = -(1-m23)/m22;
-                bottom =  (1-m13)/m11;
-                top    = -(1+m13)/m11;
-                left   = -(1+m03)/m00;
-                right  =  (1-m03)/m00;
-             */
-/*
-                float near   =  (1+m23)/m22;
-                float far    = -(1-m23)/m22;
-                *pfBottom    =  (1-m13)/m11;
-                *pfTop       = -(1+m13)/m11;
-                *pfLeft      = -(1+m03)/m00;
-                *pfRight     =  (1-m03)/m00;
-*/
-
-                float near   = m23/(m22-1);
-                float far    = m23/(m22+1);
-                *pfBottom = -  (m12-1)/m11;
-                *pfTop    = -  (m12+1)/m11;
-                *pfLeft   =    (m02-1)/m00;
-                *pfRight  =    (m02+1)/m00;
-
-
-            DriverLog("is: %f %f, %f %f %f %f; should: %f %f %f %f\n", near, far, *pfLeft, *pfRight, *pfTop, *pfBottom, hc[0], hc[1], hc[2], hc[3]);
-        
+            DriverLog("is: %f %f %f %f; should: %f %f %f %f  | %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, hc[0], hc[1], hc[2], hc[3], near, far);
 	}
 
 	virtual DistortionCoordinates_t ComputeDistortion( EVREye eEye, float fU, float fV ) 
