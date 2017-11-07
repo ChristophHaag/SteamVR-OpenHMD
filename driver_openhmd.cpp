@@ -739,9 +739,11 @@ public:
 		if ( m_unObjectId != vr::k_unTrackedDeviceIndexInvalid )
 		{
 			vr::VRServerDriverHost()->TrackedDevicePoseUpdated( m_unObjectId, GetPose(), sizeof( DriverPose_t ) );
-            vr::VRServerDriverHost()->TrackedDevicePoseUpdated( lcindex, m_OpenHMDDeviceDriverControllerL->GetPose(), sizeof( DriverPose_t ) );
-            vr::VRServerDriverHost()->TrackedDevicePoseUpdated( rcindex, m_OpenHMDDeviceDriverControllerR->GetPose(), sizeof( DriverPose_t ) );
-		}
+			if (m_OpenHMDDeviceDriverControllerL->exists())
+				vr::VRServerDriverHost()->TrackedDevicePoseUpdated( lcindex, m_OpenHMDDeviceDriverControllerL->GetPose(), sizeof( DriverPose_t ) );
+			if (m_OpenHMDDeviceDriverControllerR->exists())
+				vr::VRServerDriverHost()->TrackedDevicePoseUpdated( rcindex, m_OpenHMDDeviceDriverControllerR->GetPose(), sizeof( DriverPose_t ) );
+                }
 	}
 
 	std::string GetSerialNumber() const { return m_sSerialNumber; }

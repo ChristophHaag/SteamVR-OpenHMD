@@ -35,12 +35,19 @@ Upstream pull request to follow: https://github.com/OpenHMD/OpenHMD/issues/8
 
 For now. $HOME/.ohmd_config.txt is used.
 
-Example content:
+Example content for a HMD 0, nolo HMD tracker 1, nolo controllers 2 and 3:
+
+    hmddisplay 0
+    hmdtracker 1
+    leftcontroller 2
+    rightcontroller 3
+
+or a single HMD 0 with no controllers
 
     hmddisplay 0
     hmdtracker 0
-    leftcontroller 2
-    rightcontroller 3
+    leftcontroller -1
+    rightcontroller -1
 
 This defines 4 openhmd devices.
 
@@ -51,6 +58,8 @@ This defines 4 openhmd devices.
 If the config file is not available (probably only works on linux), default values are used. Change them in ohmd_config.h.
 
 # TODO
+
+default configuration with first hmd and first two controllers
 
 controller buttons
 
