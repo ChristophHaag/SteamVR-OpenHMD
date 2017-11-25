@@ -59,10 +59,8 @@ If the config file is not available (probably only works on linux), default valu
 
 # TODO
 
-default configuration with first hmd and first two controllers
-
-controller buttons
-
-steamvr & vector acceleration values?
-
-Threading
+* controller buttons!! currently pressing any button does nothing
+* controller models!
+* default to first hmd and first two controllers that are found instead of hardcoded values. Experiment with https://github.com/ChristophHaag/openhmddialog
+* update tracking data in a separate thread
+* vector acceleration values? may improve tracking?
