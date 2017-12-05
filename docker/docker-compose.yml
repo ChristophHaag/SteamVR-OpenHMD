@@ -1,0 +1,8 @@
+steamvr_openhmd_build:
+  build:  .
+  volumes:
+    - $HOME:/home/$USER/
+    - ../:/tmp/dev/
+    - /etc/passwd:/etc/passwd
+  environment:
+    USER : $USER

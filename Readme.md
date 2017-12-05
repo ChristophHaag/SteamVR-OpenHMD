@@ -29,6 +29,20 @@ Don't forget to make a backup if you have special SteamVR settings.
 
 Now run SteamVR and check ~/.local/share/Steam/logs/vrserver.txt for errors.
 
+
+## Build and run with docker:
+
+    git clone --recursive https://github.com/ChristophHaag/SteamVR-OpenHMD.git
+    cd SteamVR-OpenHMD
+    docker.sh
+
+This will create a docker container running the same GCC as Steam uses, so the driver will be compatible with Steam runtime libstdc++ library.
+The script docker.sh will create the container, build the driver, register it with steam (using `vrpathreg adddriver` as described above) and, if the build is successful, it launches steamVR using STEAM_RUNTIME_PREFER_HOST_LIBRARIES=0 so Steam uses it's own runtime environment to run steamVR.
+
+This method is simpler to build the driver and builds a driver fully compatible with the steam runtime, no matter the distro you're running. You just need to have Docker installed!
+
+
+
 ## Configuration:
 
 Upstream pull request to follow: https://github.com/OpenHMD/OpenHMD/issues/8
