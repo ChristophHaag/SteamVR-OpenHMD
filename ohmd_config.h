@@ -35,11 +35,11 @@ int *get_configvalues() {
         fclose(file);
         
     } else {
-        DriverLog("could not open config file %s, using defaults\n", filename);
+        DriverLog("could not open config file %s, using default headset 0 with no controller\n", filename);
         vals[0] = 0;
         vals[1] = 0;
-        vals[2] = 1;
-        vals[3] = 2;
+        vals[2] = -1;
+        vals[3] = -1;
     }
     return vals;
 }
