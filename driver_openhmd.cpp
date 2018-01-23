@@ -151,7 +151,7 @@ void CWatchdogDriver_OpenHMD::Cleanup()
 
 vr::TrackedDeviceIndex_t lcindex;
 vr::TrackedDeviceIndex_t rcindex;
-class COpenHMDDeviceDriverController : public vr::ITrackedDeviceServerDriver, public vr::IVRControllerComponent {
+class COpenHMDDeviceDriverController : public vr::ITrackedDeviceServerDriver /*, public vr::IVRControllerComponent */ {
 public:
     int index;
     COpenHMDDeviceDriverController(int index) : index(index) {
@@ -182,11 +182,11 @@ public:
 
     void *GetComponent( const char *pchComponentNameAndVersion )
     {
-        DriverLog("get controller component %s | %s ", pchComponentNameAndVersion, vr::IVRControllerComponent_Version);
-        if (!strcmp(pchComponentNameAndVersion, vr::IVRControllerComponent_Version))
+        DriverLog("get controller component %s | %s ", pchComponentNameAndVersion, /*vr::IVRControllerComponent_Version*/ "<nothing>");
+        if (!strcmp(pchComponentNameAndVersion, /*vr::IVRControllerComponent_Version*/ "<nothing>"))
         {
             DriverLog(": yes\n");
-            return (vr::IVRControllerComponent*)this;
+            return NULL;//(vr::IVRControllerComponent*)this;
 
         }
 
