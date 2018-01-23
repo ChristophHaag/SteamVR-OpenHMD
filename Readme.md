@@ -17,7 +17,7 @@ If you use the Vive and want to use the (imperfect) values from https://github.c
 
 First register the driver with SteamVR:
 
-    ~/.local/share/Steam/SteamApps/common/SteamVR/bin/linux64/vrpathreg adddriver ~/SteamVR-OpenHMD/build
+    ~/.local/share/Steam/steamapps/common/SteamVR/bin/linux64/vrpathreg adddriver ~/SteamVR-OpenHMD/build
 
 The directory given to vrpathreg should contain `driver.vrdrivermanifest`, `resources/` and `bin/linux64/driver_openhmd.so`.
 
