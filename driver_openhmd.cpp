@@ -158,7 +158,7 @@ public:
         DriverLog("construct controller object %d\n", index);
         this->index = index;
     }
-    virtual EVRInitError Activate( vr::TrackedDeviceIndex_t unObjectId )
+    EVRInitError Activate( vr::TrackedDeviceIndex_t unObjectId )
     {
         DriverLog("activate controller %d: %d\n", index, unObjectId);
         if (index == 0) {
@@ -169,13 +169,13 @@ public:
         return VRInitError_None;
     }
 
-    virtual void Deactivate()
+    void Deactivate()
     {
         DriverLog("deactivate controller\n");
         //m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
     }
 
-    virtual void EnterStandby()
+    void EnterStandby()
     {
                 DriverLog("standby controller\n");
     }
@@ -195,7 +195,7 @@ public:
     }
 
     /** debug request from a client */
-    virtual void DebugRequest( const char *pchRequest, char *pchResponseBuffer, uint32_t unResponseBufferSize )
+    void DebugRequest( const char *pchRequest, char *pchResponseBuffer, uint32_t unResponseBufferSize )
     {
         if( unResponseBufferSize >= 1 )
             pchResponseBuffer[0] = 0;
@@ -378,12 +378,12 @@ public:
         DriverLog("driver_openhmd: Distortion values a=%f b=%f c=%f d=%f\n", distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3]);
 	}
 
-	virtual ~COpenHMDDeviceDriver()
+	~COpenHMDDeviceDriver()
 	{
 	}
 
 
-	virtual EVRInitError Activate( vr::TrackedDeviceIndex_t unObjectId ) 
+	EVRInitError Activate( vr::TrackedDeviceIndex_t unObjectId )
 	{
 		m_unObjectId = unObjectId;
 		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer( m_unObjectId );
@@ -467,12 +467,12 @@ public:
 		return VRInitError_None;
 	}
 
-	virtual void Deactivate() 
+	void Deactivate()
 	{
 		m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
 	}
 
-	virtual void EnterStandby()
+	void EnterStandby()
 	{
 	}
 
@@ -485,17 +485,17 @@ public:
 		return NULL;
 	}
 
-	virtual void PowerOff() 
+	void PowerOff()
 	{
 	}
 
-	virtual void DebugRequest( const char *pchRequest, char *pchResponseBuffer, uint32_t unResponseBufferSize ) 
+	void DebugRequest( const char *pchRequest, char *pchResponseBuffer, uint32_t unResponseBufferSize )
 	{
 		if( unResponseBufferSize >= 1 )
 			pchResponseBuffer[0] = 0;
 	}
 
-	virtual void GetWindowBounds( int32_t *pnX, int32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight ) 
+	void GetWindowBounds( int32_t *pnX, int32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight )
 	{
 		*pnX = m_nWindowX;
 		*pnY = m_nWindowY;
@@ -503,23 +503,23 @@ public:
 		*pnHeight = m_nWindowHeight;
 	}
 
-	virtual bool IsDisplayOnDesktop() 
+	bool IsDisplayOnDesktop()
 	{
 		return true;
 	}
 
-	virtual bool IsDisplayRealDisplay() 
+	bool IsDisplayRealDisplay()
 	{
 		return true;
 	}
 
-	virtual void GetRecommendedRenderTargetSize( uint32_t *pnWidth, uint32_t *pnHeight ) 
+	void GetRecommendedRenderTargetSize( uint32_t *pnWidth, uint32_t *pnHeight )
 	{
 		*pnWidth = m_nRenderWidth;
 		*pnHeight = m_nRenderHeight;
 	}
 
-	virtual void GetEyeOutputViewport( EVREye eEye, uint32_t *pnX, uint32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight ) 
+	void GetEyeOutputViewport( EVREye eEye, uint32_t *pnX, uint32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight )
 	{
 		*pnY = 0;
 		*pnWidth = m_nWindowWidth / 2;
@@ -585,7 +585,7 @@ public:
         }
 
 
-	virtual void GetProjectionRaw( EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom )
+	void GetProjectionRaw( EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom )
 	{
             float ohmdprojection[16];
             if (eEye == Eye_Left) {
@@ -620,7 +620,7 @@ public:
             DriverLog("projectionraw values lrtb, near far: %f %f %f %f | %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, near, far);
 	}
 
-	virtual DistortionCoordinates_t ComputeDistortion( EVREye eEye, float fU, float fV ) 
+	DistortionCoordinates_t ComputeDistortion( EVREye eEye, float fU, float fV )
 	{
 
             int hmd_w;
