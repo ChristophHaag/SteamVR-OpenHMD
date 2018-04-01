@@ -1,5 +1,5 @@
 {
-	"alwaysActivate": true,
+	"alwaysActivate": false,
 	"name" : "openhmd",
 	"directory" : "",
 	"resourceOnly" : false,
