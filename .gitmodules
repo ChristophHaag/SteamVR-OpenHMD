@@ -1,3 +1,3 @@
 [submodule "external/openhmd"]
-	path = external/openhmd
+	path = subprojects/openhmd
 	url = https://github.com/OpenHMD/OpenHMD.git

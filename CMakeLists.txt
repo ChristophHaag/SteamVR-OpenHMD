@@ -6,13 +6,13 @@ project (driver_openhmd)
 file(COPY driver.vrdrivermanifest DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY resources DESTINATION ${CMAKE_BINARY_DIR})
 
-include_directories("${CMAKE_SOURCE_DIR}/external/openhmd/include")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/external/openhmd/cmake/")
-add_subdirectory(./external/openhmd)
+include_directories("${CMAKE_SOURCE_DIR}/subprojects/openhmd/include")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/subprojects/openhmd/cmake/")
+add_subdirectory(./subprojects/openhmd)
 
 #we only need one single header file from openvr, so don't bother downloading the entire thing
-file(DOWNLOAD https://raw.githubusercontent.com/ValveSoftware/openvr/master/headers/openvr_driver.h "${CMAKE_SOURCE_DIR}/external/openvr/openvr_driver.h")
-include_directories("${CMAKE_SOURCE_DIR}/external/openvr/")
+file(DOWNLOAD https://raw.githubusercontent.com/ValveSoftware/openvr/master/headers/openvr_driver.h "${CMAKE_SOURCE_DIR}/subprojects/openvr/openvr_driver.h")
+include_directories("${CMAKE_SOURCE_DIR}/subprojects/openvr/")
 
 add_library(driver_openhmd SHARED
   driverlog.cpp
