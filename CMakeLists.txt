@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 
 project (driver_openhmd)
+
+set (CMAKE_CXX_STANDARD 11)
 
 # meta data that the steamvr plugin needs in the base directory of the steamvr plugin
 file(COPY driver.vrdrivermanifest DESTINATION ${CMAKE_BINARY_DIR})

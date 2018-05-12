@@ -1,0 +1,41 @@
+From b19b5f3385922473b14928d8bac7256f1ef4b67a Mon Sep 17 00:00:00 2001
+From: Christoph Haag <haagch@frickel.club>
+Date: Mon, 2 Apr 2018 00:08:32 +0200
+Subject: [PATCH] fix up mingw makefile to work on linux mingw
+
+build with:
+CC=/usr/bin/x86_64-w64-mingw32-gcc CXX=/usr/bin/x86_64-w64-mingw32-g++ make -f Makefile.mingw
+---
+ windows/Makefile.mingw | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/windows/Makefile.mingw b/windows/Makefile.mingw
+index b800004..a9568e1 100644
+--- a/windows/Makefile.mingw
++++ b/windows/Makefile.mingw
+@@ -8,17 +8,17 @@
+ 
+ all: hidtest libhidapi.dll
+ 
+-CC=gcc
+-CXX=g++
++CC?=gcc
++CXX?=g++
+ COBJS=hid.o
+ CPPOBJS=../hidtest/hidtest.o
+ OBJS=$(COBJS) $(CPPOBJS)
+ CFLAGS=-I../hidapi -g -c
+-LIBS= -lsetupapi
+-DLL_LDFLAGS = -mwindows -lsetupapi
++LIBS= -lsetupapi -lssp
++DLL_LDFLAGS = -mwindows -lsetupapi -lssp
+ 
+ hidtest: $(OBJS)
+-	g++ -g $^ $(LIBS) -o hidtest
++	$(CXX) -g $^ $(LIBS) -o hidtest
+ 
+ libhidapi.dll: $(OBJS)
+ 	$(CC) -g $^ $(DLL_LDFLAGS) -o libhidapi.dll
+-- 
+2.16.3
+

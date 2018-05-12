@@ -10,7 +10,11 @@ sources = [
 	'driver_openhmd.cpp'
 ]
 
-includes = include_directories('./subprojects/openhmd/include')
+includes = include_directories([
+	'./subprojects/openhmd/include',
+	'./subprojects/openvr/',
+	'../hidapi/hidapi' #TODO: fix this
+])
 
 openhmd_subproject = subproject('openhmd')
 openhmd_lib = openhmd_subproject.get_variable('openhmd_lib')
