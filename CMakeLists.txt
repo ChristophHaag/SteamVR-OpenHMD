@@ -12,8 +12,6 @@ include_directories("${CMAKE_SOURCE_DIR}/subprojects/openhmd/include")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/subprojects/openhmd/cmake/")
 add_subdirectory(./subprojects/openhmd)
 
-#we only need one single header file from openvr, so don't bother downloading the entire thing
-file(DOWNLOAD https://raw.githubusercontent.com/ValveSoftware/openvr/master/headers/openvr_driver.h "${CMAKE_SOURCE_DIR}/subprojects/openvr/openvr_driver.h")
 include_directories("${CMAKE_SOURCE_DIR}/subprojects/openvr/")
 
 add_library(driver_openhmd SHARED
