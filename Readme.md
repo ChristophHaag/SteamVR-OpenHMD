@@ -1,5 +1,10 @@
 # SteamVR Plugin for OpenHMD Drivers
 
+## Before building: Use latest git OpenHMD (optional)
+
+    cd subprojects/openhmd
+    git pull origin master
+
 ## Build with cmake:
 
     git clone --recursive https://github.com/ChristophHaag/SteamVR-OpenHMD.git
@@ -13,7 +18,15 @@ OpenHMD is included as a git submodule. An OpenHMD shared library will be built 
 
 If you use the Vive and want to use the (imperfect) values from https://github.com/OpenHMD/OpenHMD/pull/90, go to external/openhmd and run `git pull origin pull/90/head` before the make step to merge the pull request locally.
 
-## Run:
+## Run (easy for linux):
+
+Run `./register.sh`.
+
+This overwrites SteamVR's settings with a steamvr.vrsettings that disables all SteamVR hardware plugins that ship with SteamVR (Vive lighthouse, Oculus, etc). The current SteamVR config will be backed up to steamvr-config-backup/. Then it registers the current build directory as a SteamVR plugin.
+
+To do the reverse, run `./unregister.sh`.
+
+## Run (detailed for linux, adapt to your operating system)
 
 First register the driver with SteamVR:
 
