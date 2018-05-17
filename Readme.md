@@ -1,5 +1,17 @@
 # SteamVR Plugin for OpenHMD Drivers
 
+# Status/TODO
+
+* controller buttons are currently unimplemented and pressing any button does nothing
+* controller models - OpenHMD doesn't provide a method ([yet](https://github.com/OpenHMD/OpenHMD/issues/119)) to get rendermodels, so default (Steam Gamepad controller) is used
+* Controllers are not used by default because of those limitations. To change the default you can use the config file mechanism (on Linux) or change the default config in ohmd_config.h in the else branch (index 2 and 3 are controllers) before compiling
+
+Possible improvements:
+
+* updating tracking data asynchronously in a separate thread might improve smoothness (if there is a problem)
+* feeding vector acceleration values to SteamVR? Would that improve tracking or make OpenHMD's tracking worse?
+
+
 ## Before building: Use latest git OpenHMD (optional)
 
     cd subprojects/openhmd
@@ -83,11 +95,3 @@ This defines 4 openhmd devices.
 * leftcontroller and rightcontroller are the indices for the controllers. There are no separate trackers for controllers for now but it's easy to hack in.
 
 If the config file is not available (probably only works on linux), default values are used. Change them in ohmd_config.h.
-
-# TODO
-
-* controller buttons!! currently pressing any button does nothing
-* controller models!
-* default to first hmd and first two controllers that are found instead of hardcoded values. Experiment with https://github.com/ChristophHaag/openhmddialog
-* update tracking data in a separate thread
-* vector acceleration values? may improve tracking?
