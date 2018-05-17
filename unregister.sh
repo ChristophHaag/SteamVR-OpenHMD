@@ -15,11 +15,12 @@ if [ ! -f "$VRPATHREG" ]; then
 fi
 
 if [ -f "$BACKUPCONFIG" ]; then
-	echo "Found config in $BACKUPCONFIG"
+	echo "Found backed up config in $BACKUPCONFIG"
 	echo "Restoring SteamVR config $BACKUPCONFIG..."
 	cp "$BACKUPCONFIG" "$CURRENTCONFIG"
-	echo "Restored up config!"
+	echo "Restored config!"
 fi
 
-echo "Unregistering Driver..."
+echo "Unregistering driver..."
 LD_LIBRARY_PATH="$OPENVR_API_PATH:$LD_LIBRARY_PATH" "$VRPATHREG" removedriver "$DIR"/build
+echo "Registered driver!"

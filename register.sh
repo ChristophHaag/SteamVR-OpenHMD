@@ -30,5 +30,6 @@ echo "Installing SteamVR-OpenHMD config..."
 cp "$OHMDCONFIG" "$CURRENTCONFIG"
 echo "Installed SteamVR-OpenHMD config"
 
-echo "Registering Driver..."
+echo "Registering driver..."
 LD_LIBRARY_PATH="$OPENVR_API_PATH:$LD_LIBRARY_PATH" "$VRPATHREG" adddriver "$DIR"/build
+echo "Registered driver!"
