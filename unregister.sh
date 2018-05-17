@@ -23,4 +23,4 @@ fi
 
 echo "Unregistering driver..."
 LD_LIBRARY_PATH="$OPENVR_API_PATH:$LD_LIBRARY_PATH" "$VRPATHREG" removedriver "$DIR"/build
-echo "Registered driver!"
+echo "Unregistered driver!"
