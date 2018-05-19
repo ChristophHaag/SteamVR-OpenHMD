@@ -151,8 +151,10 @@ void CWatchdogDriver_OpenHMD::Cleanup()
 
 vr::TrackedDeviceIndex_t lcindex;
 vr::TrackedDeviceIndex_t rcindex;
-class COpenHMDDeviceDriverController : public vr::ITrackedDeviceServerDriver /*, public vr::IVRControllerComponent */ {
+class COpenHMDDeviceDriverController : public vr::ITrackedDeviceServerDriver {
 public:
+	VRInputComponentHandle_t gripHandle;
+	bool tempval = false;
     int index;
     COpenHMDDeviceDriverController(int index) : index(index) {
         DriverLog("construct controller object %d\n", index);
@@ -165,8 +167,23 @@ public:
             lcindex = unObjectId;
         } else {
             rcindex = unObjectId;
-        }
-        return VRInitError_None;
+	}
+
+	PropertyContainerHandle_t ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer( unObjectId );
+
+
+	vr::VRProperties()->SetStringProperty(ulPropertyContainer, vr::Prop_RenderModelName_String, "vr_controller_vive_1_5"); //TODO: Provide right rendermdel
+
+	vr::VRProperties()->SetInt32Property(ulPropertyContainer, vr::Prop_DeviceClass_Int32, vr::TrackedDeviceClass_Controller);
+	vr::VRProperties()->SetStringProperty( ulPropertyContainer, Prop_ModelNumber_String, "1" );
+	vr::VRProperties()->SetStringProperty( ulPropertyContainer, Prop_ControllerType_String, "openhmd_controller" );
+
+	vr::VRProperties()->SetStringProperty( ulPropertyContainer, Prop_InputProfilePath_String, "{openhmd}/input/openhmd_controller_profile.json" );
+	vr::EVRInputError err = VRDriverInput()->CreateBooleanComponent(ulPropertyContainer, "/input/grip/click", &gripHandle);
+	if (err != VRInputError_None) {
+		printf("INPUT CREATE ERROR %d\n", err);
+	}
+	return VRInitError_None;
     }
 
     void Deactivate()
@@ -182,12 +199,15 @@ public:
 
     void *GetComponent( const char *pchComponentNameAndVersion )
     {
-        DriverLog("get controller component %s | %s ", pchComponentNameAndVersion, /*vr::IVRControllerComponent_Version*/ "<nothing>");
+	    if (std::strcmp(pchComponentNameAndVersion, vr::ITrackedDeviceServerDriver_Version) == 0) {
+		    return static_cast<vr::ITrackedDeviceServerDriver*>(this);
+	    }
+
+	DriverLog("get controller component %s | %s ", pchComponentNameAndVersion, /*vr::IVRControllerComponent_Version*/ "<nothing>");
         if (!strcmp(pchComponentNameAndVersion, /*vr::IVRControllerComponent_Version*/ "<nothing>"))
         {
             DriverLog(": yes\n");
             return NULL;//(vr::IVRControllerComponent*)this;
-
         }
 
         DriverLog(": no\n");
@@ -233,41 +253,15 @@ public:
 		return pose;
     }
 
-    VRControllerState_t controllerstate;
-    VRControllerState_t GetControllerState() {
-        DriverLog("get controller state\n");
-        //return controllerstate;
-
-        controllerstate.unPacketNum = controllerstate.unPacketNum + 1;
-        /* //TODO: buttons
-         *   if (ohmd_button_state) {
-         *       state.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button1);
-    }
-    // other buttons ...
-    */
-
-        //TODO: nolo says when a button was pressed a button was also touched. is that so?
-        controllerstate.ulButtonTouched |= controllerstate.ulButtonPressed;
-
-        uint64_t ulChangedTouched = controllerstate.ulButtonTouched ^ controllerstate.ulButtonTouched;
-        uint64_t ulChangedPressed = controllerstate.ulButtonPressed ^ controllerstate.ulButtonPressed;
-
-        /*
-         *   if (controllerstate.rAxis[0].x != openhmd.... || controllerstate.rAxis[0].y != )
-         *       controllerstate->TrackedDeviceAxisUpdated(???, 0, NewState.rAxis[0]);
+    void RunFrame() {
+	    tempval = !tempval;
+	    printf("Setting grip button press to %d\n", tempval);
+	    vr::EVRInputError err =  VRDriverInput()->UpdateBooleanComponent(gripHandle, tempval, 2);
+	    if (err != VRInputError_None) {
+		    printf("INPUT ERROR UPDATE: %d\n", err);
+	    }
     }
 
-        controllerstate.rAxis[0].x = openhmd...
-        controllerstate.rAxis[0].y =
-        controllerstate.rAxis[1].x =
-        controllerstate.rAxis[1].y =
-        */
-        return controllerstate;
-    }
-
-    bool TriggerHapticPulse( uint32_t unAxisId, uint16_t usPulseDurationMicroseconds ) {
-        return false;
-    }
 
     std::string GetSerialNumber() const { 
         DriverLog("get controller serial number %s\n", m_sSerialNumber.c_str());
@@ -825,6 +819,13 @@ void CServerDriver_OpenHMD::RunFrame()
 	{
 		m_OpenHMDDeviceDriver->RunFrame();
 	}
+	if (m_OpenHMDDeviceDriverControllerL) {
+		m_OpenHMDDeviceDriverControllerL->RunFrame();
+	}
+	if (m_OpenHMDDeviceDriverControllerR) {
+		m_OpenHMDDeviceDriverControllerR->RunFrame();
+	}
+
 }
 
 //-----------------------------------------------------------------------------
