@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIR=$(dirname "$(readlink -f "$0")")
-VRPATHREG="$HOME"/.local/share/Steam/SteamApps/common/SteamVR/bin/linux64/vrpathreg
+VRPATHREG="$HOME"/.local/share/Steam/steamapps/common/SteamVR/bin/linux64/vrpathreg
 
 CURRENTCONFIG="$HOME"/.local/share/Steam/config/steamvr.vrsettings
 BACKUPDIR="$DIR"/steamvr-config-backup
