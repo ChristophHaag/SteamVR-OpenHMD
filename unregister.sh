@@ -7,7 +7,7 @@ CURRENTCONFIG="$HOME"/.local/share/Steam/config/steamvr.vrsettings
 BACKUPDIR="$DIR"/steamvr-config-backup
 BACKUPCONFIG="$BACKUPDIR"/steamvr.vrsettings
 OHMDCONFIG="$DIR"/steamvr.vrsettings
-OPENVR_API_PATH="$HOME"/.local/share/Steam/ubuntu12_32/
+OPENVR_API_PATH="$HOME"/.local/share/Steam/steamapps/common/SteamVR/bin/linux64/
 
 if [ ! -f "$VRPATHREG" ]; then
 	echo "Please install SteamVR so that $VRPATHREG exists"

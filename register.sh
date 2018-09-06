@@ -7,7 +7,7 @@ CURRENTCONFIG="$HOME"/.local/share/Steam/config/steamvr.vrsettings
 BACKUPDIR="$DIR"/steamvr-config-backup
 mkdir -p "$BACKUPDIR"
 OHMDCONFIG="$DIR"/steamvr.vrsettings
-OPENVR_API_PATH="$HOME"/.local/share/Steam/ubuntu12_32/
+OPENVR_API_PATH="$HOME"/.local/share/Steam/steamapps/common/SteamVR/bin/linux64/
 
 if [ ! -d "$DIR"/build ]; then
 	echo "Please build in $DIR/build for this script to work"
