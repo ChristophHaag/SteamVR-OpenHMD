@@ -21,7 +21,7 @@ add_library(driver_openhmd SHARED
 )
 target_link_libraries(driver_openhmd
   ${CMAKE_DL_LIBS}
-  openhmd-shared
+  openhmd
 )
 
 #determine the output directory for the steamvr plugin
@@ -50,4 +50,4 @@ set_target_properties(driver_openhmd PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${PLUG
 
 SET_TARGET_PROPERTIES(driver_openhmd PROPERTIES PREFIX "") # don't add lib prefix to driver_openhmd.so
 
-add_dependencies(driver_openhmd openhmd-shared)
+add_dependencies(driver_openhmd openhmd)
