@@ -266,7 +266,7 @@ public:
     void RunFrame() {
 	    tempval = !tempval;
 	    printf("Setting grip button press to %d\n", tempval);
-	    vr::EVRInputError err1 =  VRDriverInput()->UpdateBooleanComponent(gripHandle, tempval, 2);
+	    vr::EVRInputError err =  VRDriverInput()->UpdateBooleanComponent(gripHandle, tempval, 2);
 	    if (err != VRInputError_None) {
 		    printf("INPUT ERROR UPDATE: %d\n", err);
 	    }
