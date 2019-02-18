@@ -17,6 +17,10 @@ Possible improvements:
     cd subprojects/openhmd
     git pull origin master
 
+## Install needed packages (Ubuntu):
+
+    sudo apt-get install build-essential cmake libhidapi-dev 
+
 ## Build with cmake:
 
     git clone --recursive https://github.com/ChristophHaag/SteamVR-OpenHMD.git
