@@ -1,13 +1,26 @@
 #!/bin/bash
 
 DIR=$(dirname "$(readlink -f "$0")")
-VRPATHREG="$HOME"/.local/share/Steam/steamapps/common/SteamVR/bin/linux64/vrpathreg
 
-CURRENTCONFIG="$HOME"/.local/share/Steam/config/steamvr.vrsettings
-BACKUPDIR="$DIR"/steamvr-config-backup
+source "$DIR"/paths.sh
+
+if [ -z "$STEAMDIR" ];
+then
+	echo "Error! Did not find Steam path"
+	exit 1
+else
+	echo "Found Steam in $STEAMDIR"
+fi
+
+if [ -z "$STEAMVRDIR" ];
+then
+	echo "Error! Did not find SteamVR path"
+	exit 1
+else
+	echo "Found SteamVR in $STEAMVRDIR"
+fi
+
 mkdir -p "$BACKUPDIR"
-OHMDCONFIG="$DIR"/steamvr.vrsettings
-OPENVR_API_PATH="$HOME"/.local/share/Steam/steamapps/common/SteamVR/bin/linux64/
 
 if [ ! -d "$DIR"/build ]; then
 	echo "Please build in $DIR/build for this script to work"
@@ -15,7 +28,7 @@ if [ ! -d "$DIR"/build ]; then
 fi
 
 if [ ! -f "$VRPATHREG" ]; then
-	echo "Please install SteamVR so that $VRPATHREG exists"
+	echo "Please install SteamVR such that $VRPATHREG exists"
 	exit 1
 fi
 
@@ -30,6 +43,6 @@ echo "Installing SteamVR-OpenHMD config..."
 cp "$OHMDCONFIG" "$CURRENTCONFIG"
 echo "Installed SteamVR-OpenHMD config"
 
-echo "Registering driver..."
+echo "Registering SteamVR-OpenHMD plugin with SteamVR..."
 LD_LIBRARY_PATH="$OPENVR_API_PATH:$LD_LIBRARY_PATH" "$VRPATHREG" adddriver "$DIR"/build
-echo "Registered driver!"
+echo "Registered SteamVR-OpenHMD plugin with SteamVR!"
