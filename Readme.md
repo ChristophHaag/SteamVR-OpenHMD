@@ -99,3 +99,7 @@ This defines 4 openhmd devices.
 * leftcontroller and rightcontroller are the indices for the controllers. There are no separate trackers for controllers for now but it's easy to hack in.
 
 If the config file is not available (probably only works on linux), default values are used. Change them in ohmd_config.h.
+
+## License
+
+SteamVR-OpenHMD is released under the permissive Boost Software License (see LICENSE for more information), to make sure it can be linked and distributed with both free and non-free software. While it doesn't require contribution from the users, it is still very appreciated.
