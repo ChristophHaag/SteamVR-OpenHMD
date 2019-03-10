@@ -9,6 +9,7 @@
 #include <thread>
 #include <chrono>
 #include <cstring>
+#include <sstream>
 
 #if defined( _WINDOWS )
 #include <windows.h>
@@ -341,16 +342,27 @@ public:
 
 		DriverLog( "Using settings values\n" );
         ohmd_device_getf(hmd, OHMD_EYE_IPD, &m_flIPD);
+        
+        {
+		    std::stringstream buf;
+            buf << ohmd_list_gets(ctx, 0, OHMD_PRODUCT);
+            buf << ": ";
+            buf << ohmd_list_gets(ctx, 0, OHMD_PATH);
+            m_sSerialNumber = buf.str();
+        }
 
-		char buf[1024];
-        strcpy(buf, ohmd_list_gets(ctx, 0, OHMD_PRODUCT)); //whatever
-        strcat(buf, ": ");
-        strcat(buf, ohmd_list_gets(ctx, 0, OHMD_PATH));
-        m_sSerialNumber = buf;
-
-        strcpy(buf, "OpenHMD: ");
-        strcat(buf, ohmd_list_gets(ctx, 0, OHMD_PRODUCT));
-        m_sModelNumber = buf;
+        {
+		    std::stringstream buf;
+            buf << "OpenHMD: ";
+            buf << ohmd_list_gets(ctx, 0, OHMD_PRODUCT);
+            m_sModelNumber = buf.str();
+        }
+        
+        // Important to pass vendor through. Gaze cursor is only available for "Oculus". So grab the first word.
+        m_sVendor = ohmd_list_gets(ctx, 0, OHMD_VENDOR);
+        if (m_sVendor.find(' ') != std::string::npos) {
+            m_sVendor = m_sVendor.substr(0, m_sVendor.find(' '));
+        }
 
         m_nWindowX = 1920; //TODO: real window offset
 		m_nWindowY = 0;
@@ -365,7 +377,8 @@ public:
         //TODO: find actual frequency somehow (from openhmd?)
 		m_flDisplayFrequency = vr::VRSettings()->GetFloat( k_pch_Sample_Section, k_pch_Sample_DisplayFrequency_Float );
 
-		DriverLog( "driver_openhmd: Serial Number: %s\n", m_sSerialNumber.c_str() );
+		DriverLog( "driver_openhmd: Vendor: %s\n", m_sVendor.c_str() );
+        DriverLog( "driver_openhmd: Serial Number: %s\n", m_sSerialNumber.c_str() );
 		DriverLog( "driver_openhmd: Model Number: %s\n", m_sModelNumber.c_str() );
 		DriverLog( "driver_openhmd: Window: %d %d %d %d\n", m_nWindowX, m_nWindowY, m_nWindowWidth, m_nWindowHeight );
 		DriverLog( "driver_openhmd: Render Target: %d %d\n", m_nRenderWidth, m_nRenderHeight );
@@ -388,6 +401,7 @@ public:
 		m_unObjectId = unObjectId;
 		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer( m_unObjectId );
 
+        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ManufacturerName_String, m_sVendor.c_str());
 		vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str() );
 		vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, m_sModelNumber.c_str() );
 		vr::VRProperties()->SetFloatProperty( m_ulPropertyContainer, Prop_UserIpdMeters_Float, m_flIPD );
@@ -752,7 +766,8 @@ private:
 	vr::TrackedDeviceIndex_t m_unObjectId;
 	vr::PropertyContainerHandle_t m_ulPropertyContainer;
 
-	std::string m_sSerialNumber;
+    std::string m_sVendor;
+    std::string m_sSerialNumber;
 	std::string m_sModelNumber;
 
 	int32_t m_nWindowX;
