@@ -37,7 +37,7 @@ If you use the Vive and want to use the (imperfect) values from https://github.c
 ## Run (easy for linux):
 
 Run `./register.sh`.
-
+add
 This overwrites SteamVR's settings with a steamvr.vrsettings that disables all SteamVR hardware plugins that ship with SteamVR (Vive lighthouse, Oculus, etc). The current SteamVR config will be backed up to steamvr-config-backup/. Then it registers the current build directory as a SteamVR plugin.
 
 To do the reverse, run `./unregister.sh`.
@@ -100,8 +100,6 @@ This defines 4 openhmd devices.
 
 If the config file is not available (probably only works on linux), default values are used. Change them in ohmd_config.h.
 
-
-
 ## Udev Rules:
 
 To allow OpenHMD to access any devices, udev rules need to be set on most linux systems.
@@ -131,3 +129,9 @@ As an example the content of this file could look like this:
     SUBSYSTEM=="usb", ATTR{idVendor}=="045e", MODE="0666", GROUP="plugdev"'
     #DreamWorld DreamGlass AR
     SUBSYSTEM=="usb", ATTR{idVendor}=="0483", MODE="0666", GROUP="plugdev"'
+
+
+## License
+
+SteamVR-OpenHMD is released under the permissive Boost Software License (see LICENSE for more information), to make sure it can be linked and distributed with both free and non-free software. While it doesn't require contribution from the users, it is still very appreciated.
+
