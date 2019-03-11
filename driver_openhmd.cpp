@@ -359,9 +359,14 @@ public:
         }
         
         // Important to pass vendor through. Gaze cursor is only available for "Oculus". So grab the first word.
-        m_sVendor = ohmd_list_gets(ctx, 0, OHMD_VENDOR);
-        if (m_sVendor.find(' ') != std::string::npos) {
-            m_sVendor = m_sVendor.substr(0, m_sVendor.find(' '));
+        char const* vendor_override = getenv("OHMD_VENDOR_OVERRIDE");
+        if (vendor_override) {
+            m_sVendor = vendor_override;
+        } else {
+            m_sVendor = ohmd_list_gets(ctx, 0, OHMD_VENDOR);
+            if (m_sVendor.find(' ') != std::string::npos) {
+                m_sVendor = m_sVendor.substr(0, m_sVendor.find(' '));
+            }
         }
 
         m_nWindowX = 1920; //TODO: real window offset

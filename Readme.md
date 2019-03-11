@@ -100,6 +100,22 @@ This defines 4 openhmd devices.
 
 If the config file is not available (probably only works on linux), default values are used. Change them in ohmd_config.h.
 
+### Gaze Pointer with gamepad
+
+At least SteamVR Home supports controller based navigation, however it is only enabled when the Manufacturer string provided by the plugin is "Oculus".
+
+The Manufacturer is usually set to what OpenHMD provides as hardware vendor but in SteamVR-OpenHMD the manufacturer string can be overriden with an environment variable.
+
+Start SteamVR like this:
+
+    OHMD_VENDOR_OVERRIDE=Oculus ~/.steam/steam/SteamApps/common/SteamVR/bin/vrstartup.sh
+
+Alternatively in the Steam GUI set the SteamVR launch options to
+
+    OHMD_VENDOR_OVERRIDE=Oculus %command%
+
+You can verify that the environment variable is set with `grep "driver_openhmd: Vendor:" ~/.steam/steam/logs/vrserver.txt`.
+
 ## Udev Rules:
 
 To allow OpenHMD to access any devices, udev rules need to be set on most linux systems.
