@@ -19,6 +19,13 @@ add_library(driver_openhmd SHARED
   driverlog.h
   driver_openhmd.cpp
 )
+
+if(MSVC)
+  target_compile_options(driver_openhmd PRIVATE /W4 /WX)
+else(MSVC)
+  target_compile_options(driver_openhmd PRIVATE -Wall) #-Wextra -Wno-unused-parameter) #-pedantic)
+endif(MSVC)
+
 target_link_libraries(driver_openhmd
   ${CMAKE_DL_LIBS}
   openhmd

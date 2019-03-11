@@ -245,8 +245,8 @@ public:
     //TODO: nolo says when a button was pressed a button was also touched. is that so?
     controllerstate.ulButtonTouched |= controllerstate.ulButtonPressed;
 
-    uint64_t ulChangedTouched = controllerstate.ulButtonTouched ^ controllerstate.ulButtonTouched;
-    uint64_t ulChangedPressed = controllerstate.ulButtonPressed ^ controllerstate.ulButtonPressed;
+    //uint64_t ulChangedTouched = controllerstate.ulButtonTouched ^ controllerstate.ulButtonTouched;
+    //uint64_t ulChangedPressed = controllerstate.ulButtonPressed ^ controllerstate.ulButtonPressed;
     return controllerstate;
     }
 
@@ -268,7 +268,7 @@ private:
     std::string m_sModelNumber = "Controller model number " + std::to_string(index);
 };
 
-class COpenHMDDeviceDriver : public vr::ITrackedDeviceServerDriver, public vr::IVRDisplayComponent
+class COpenHMDDeviceDriver final : public vr::ITrackedDeviceServerDriver, public vr::IVRDisplayComponent
 {
 public:
     COpenHMDDeviceDriver(  )
@@ -398,8 +398,7 @@ public:
         vr::VRProperties()->SetFloatProperty( m_ulPropertyContainer, Prop_DisplayFrequency_Float, m_flDisplayFrequency );
         vr::VRProperties()->SetFloatProperty( m_ulPropertyContainer, Prop_SecondsFromVsyncToPhotons_Float, m_flSecondsFromVsyncToPhotons );
 
-        float sep;
-
+        //float sep;
 
         // return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
         vr::VRProperties()->SetUint64Property( m_ulPropertyContainer, Prop_CurrentUniverseId_Uint64, 2 );
@@ -543,10 +542,10 @@ public:
 
         // f2 switches row-major and column-major
         float m00 = ohmdprojection[f2(0,0)];
-        float m03 = ohmdprojection[f2(0,3)];
-        float m10 = ohmdprojection[f2(1,3)];
+        //float m03 = ohmdprojection[f2(0,3)];
+        //float m10 = ohmdprojection[f2(1,3)];
         float m11 = ohmdprojection[f2(1,1)];
-        float m13 = ohmdprojection[f2(1,3)];
+        //float m13 = ohmdprojection[f2(1,3)];
         float m23 = ohmdprojection[f2(2,3)];
         float m22 = ohmdprojection[f2(2,2)];
         float m12 = ohmdprojection[f2(1,2)];
