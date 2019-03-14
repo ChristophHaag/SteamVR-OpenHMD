@@ -2,7 +2,7 @@
 
 #include "ohmd_config.h" // which hmds and trackers to use
 
-#include <openvr_driver.h>
+#include <openvr/openvr_driver.h>
 #include "driverlog.h"
 
 #include <vector>
