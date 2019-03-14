@@ -8,15 +8,13 @@ set (CMAKE_CXX_STANDARD 11)
 file(COPY driver.vrdrivermanifest DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY resources DESTINATION ${CMAKE_BINARY_DIR})
 
-include_directories("${CMAKE_SOURCE_DIR}/subprojects/openhmd/include")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/subprojects/openhmd/cmake/")
-add_subdirectory(./subprojects/openhmd)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
-include_directories("${CMAKE_SOURCE_DIR}/subprojects/openvr/")
+find_package(OpenHMD REQUIRED)
+find_package(openvr REQUIRED)
 
 add_library(driver_openhmd SHARED
   driverlog.cpp
-  driverlog.h
   driver_openhmd.cpp
 )
 
@@ -26,10 +24,8 @@ else(MSVC)
   target_compile_options(driver_openhmd PRIVATE -Wall) #-Wextra -Wno-unused-parameter) #-pedantic)
 endif(MSVC)
 
-target_link_libraries(driver_openhmd
-  ${CMAKE_DL_LIBS}
-  openhmd
-)
+include_directories(${OPENHMD_INCLUDE_DIRS} ${OPENVR_INCLUDE_DIRS})
+link_libraries(${OPENHMD_LIBRARY} ${OPENVR_LIBRARY})
 
 #determine the output directory for the steamvr plugin
 if (WIN32)
