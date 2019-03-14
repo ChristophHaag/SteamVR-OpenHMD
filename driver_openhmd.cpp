@@ -15,7 +15,7 @@
 #include <windows.h>
 #endif
 
-#include <openhmd.h>
+#include <openhmd/openhmd.h>
 
 #include <math.h>
 #include <stdio.h>
