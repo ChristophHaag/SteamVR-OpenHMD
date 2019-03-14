@@ -52,5 +52,3 @@ MESSAGE("SteamVR plugin path: ${PLUGINDIR}")
 set_target_properties(driver_openhmd PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${PLUGINDIR}")
 
 SET_TARGET_PROPERTIES(driver_openhmd PROPERTIES PREFIX "") # don't add lib prefix to driver_openhmd.so
-
-add_dependencies(driver_openhmd openhmd)
