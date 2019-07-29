@@ -58,6 +58,27 @@ Don't forget to make a backup if you have special SteamVR settings.
 
 Now run SteamVR and check ~/.local/share/Steam/logs/vrserver.txt for errors.
 
+## Remove (detailed)
+
+Lets remove the driver from the vrpathregistry.
+First we will check that the driver is indeed registered and where the registry points to:
+
+    LD_LIBRARY_PATH=~/.steam/steam/steamapps/common/SteamVR/bin/linux64 ~/.steam/steam/steamapps/common/SteamVR/bin/linux64/vrpathreg
+    
+Adapt the command if Steam or SteamVR are installed in a different path.
+This command will output something like the following:
+
+    Runtime path = /home/user/.steam/steam/steamapps/common/SteamVR
+    Config path = /home/user/.steam/steam/config
+    Log path = /home/user/.steam/steam/logs
+    External Drivers:
+    	/home/user/Documents/SteamVR-OpenHMD/build
+
+Now we can remove the driver from the registry by giving `removedriver /path/`to vrpathreg, while replacing the path with the one listed in "External Drivers:" like so:
+
+    LD_LIBRARY_PATH=~/.steam/steam/steamapps/common/SteamVR/bin/linux64 ~/.steam/steam/steamapps/common/SteamVR/bin/linux64/vrpathreg removedriver  /home/user/Documents/SteamVR-OpenHMD/build
+
+Now you can safely remove SteamVR-OpenHMD and OpenHMD.
 
 ## Build and run with docker:
 
