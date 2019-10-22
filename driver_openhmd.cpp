@@ -82,6 +82,7 @@ class CWatchdogDriver_OpenHMD : public IVRWatchdogProvider
 public:
     CWatchdogDriver_OpenHMD()
     {
+        DriverLog("Created watchdog object\n");
         m_pWatchdogThread = nullptr;
     }
 
@@ -110,11 +111,13 @@ void WatchdogThreadFunction(  )
         }
         std::this_thread::sleep_for( std::chrono::microseconds( 500 ) );
 #else
+        DriverLog("Watchdog wakeup\n");
         // for the other platforms, just send one every five seconds
-        std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
+        std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
         vr::VRWatchdogHost()->WatchdogWakeUp();
 #endif
     }
+    DriverLog("Watchdog exit\n");
 }
 
 EVRInitError CWatchdogDriver_OpenHMD::Init( vr::IVRDriverContext *pDriverContext )
@@ -126,6 +129,9 @@ EVRInitError CWatchdogDriver_OpenHMD::Init( vr::IVRDriverContext *pDriverContext
     // be pressed. A real driver should wait for a system button event or something else from the
     // the hardware that signals that the VR system should start up.
     g_bExiting = false;
+    
+    DriverLog("starting watchdog thread\n");
+
     m_pWatchdogThread = new std::thread( WatchdogThreadFunction );
     if ( !m_pWatchdogThread )
     {
@@ -525,31 +531,120 @@ public:
         return -1;
     }
 
+    void columnMatrixToAngles(float *yaw, float *pitch, float *roll, float colMatrix[4][4] ) {
+        double sinPitch, cosPitch, sinRoll, cosRoll, sinYaw, cosYaw;
+
+        sinPitch = -colMatrix[2][0];
+        cosPitch = sqrt(1 - sinPitch*sinPitch);
+
+        if ( abs(cosPitch) > 0.1) 
+        {
+            sinRoll = colMatrix[2][1] / cosPitch;
+            cosRoll = colMatrix[2][2] / cosPitch;
+            sinYaw = colMatrix[1][0] / cosPitch;
+            cosYaw = colMatrix[0][0] / cosPitch;
+        } 
+        else 
+        {
+            sinRoll = -colMatrix[1][2];
+            cosRoll = colMatrix[1][1];
+            sinYaw = 0;
+            cosYaw = 1;
+        }
+
+        *yaw   = atan2(sinYaw, cosYaw) * 180 / M_PI;
+        *pitch = atan2(sinPitch, cosPitch) * 180 / M_PI;
+        *roll  = atan2(sinRoll, cosRoll) * 180 / M_PI;
+    } 
+    
+    typedef union {
+        float m[4][4];
+        float arr[16];
+    } mat4x4f;
+
+    void omat4x4f_mult(const mat4x4f* l, const mat4x4f* r, mat4x4f *o) {
+        for(int i = 0; i < 4; i++){
+            float a0 = l->m[i][0], a1 = l->m[i][1], a2 = l->m[i][2], a3 = l->m[i][3];
+            o->m[i][0] = a0 * r->m[0][0] + a1 * r->m[1][0] + a2 * r->m[2][0] + a3 * r->m[3][0];
+            o->m[i][1] = a0 * r->m[0][1] + a1 * r->m[1][1] + a2 * r->m[2][1] + a3 * r->m[3][1];
+            o->m[i][2] = a0 * r->m[0][2] + a1 * r->m[1][2] + a2 * r->m[2][2] + a3 * r->m[3][2];
+            o->m[i][3] = a0 * r->m[0][3] + a1 * r->m[1][3] + a2 * r->m[2][3] + a3 * r->m[3][3];
+        }
+    }
+    
+    void createUnRotation(float angle, mat4x4f *m) {
+        memset(m, 0, sizeof(*m));
+        m->m[0][0] = 1.0f;
+        m->m[1][1] = 1.0f;
+        m->m[2][2] = 1.0f;
+        m->m[3][3] = 1.0f;
+        
+        DriverLog("Unrotating for angle %f\n", angle);
+        
+        if (angle > -5 && angle < 5) {
+            return;
+        }
+        
+        else if (angle > 85 && angle < 95) {
+            m->m[0][0] = 0.0f; m->m[0][1] = -1.0f; m->m[1][0] = 1.0f; m->m[1][1] = 0.0f;
+            m->m[0][1] = 1.0f; m->m[1][0] = -1.0f;
+        }
+
+        else if (angle > -95 && angle < -85) {
+            m->m[0][0] = 0.0f; m->m[0][1] = -1.0f; m->m[1][0] = 1.0f; m->m[1][1] = 0.0f;
+        }
+        
+        else {
+            DriverLog("UNIMPLEMENTED ROTATION!!!\n");
+        }
+    }
 
     void GetProjectionRaw( EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom )
     {
-        float ohmdprojection[16];
+        mat4x4f ohmdprojection;
         if (eEye == Eye_Left) {
-            ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
+            ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX, ohmdprojection.arr);
         } else {
-            ohmd_device_getf(hmd, OHMD_RIGHT_EYE_GL_PROJECTION_MATRIX, ohmdprojection);
+            ohmd_device_getf(hmd, OHMD_RIGHT_EYE_GL_PROJECTION_MATRIX, ohmdprojection.arr);
         }
 
+        float yaw, pitch, roll;
+        float p[4][4];
+        memcpy(p, ohmdprojection.arr, 16 * sizeof(float));
+        columnMatrixToAngles(&yaw, &pitch, &roll, p);
+        
+        if (eEye == Eye_Left) {
+            rotation_left = yaw;
+        } else {
+            rotation_right = yaw;
+        }
+        
+        mat4x4f unrotation;
+        createUnRotation(yaw, &unrotation);
+ 
+        DriverLog("unrotation\n%f %f %f %f\n%f %f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
+            unrotation.arr[0], unrotation.arr[1], unrotation.arr[2], unrotation.arr[3],
+            unrotation.arr[4], unrotation.arr[5], unrotation.arr[6], unrotation.arr[7],
+            unrotation.arr[8], unrotation.arr[9], unrotation.arr[10], unrotation.arr[11],
+            unrotation.arr[12], unrotation.arr[13], unrotation.arr[14], unrotation.arr[15]);
+            
+        omat4x4f_mult(&ohmdprojection, &unrotation, &ohmdprojection);
+        
         // http://stackoverflow.com/questions/10830293/ddg#12926655
         // get projection matrix from openhmd, convert it into lrtb + near,far with SO formula
         // then divide by near plane distance to get the tangents of the angles from the center plane (tan = opposite side = these values divided by adjacent side = near plane distance)
         // but negate top and bottom. who knows why. there are 3 or so issues for it on github
 
         // f2 switches row-major and column-major
-        float m00 = ohmdprojection[f2(0,0)];
+        float m00 = ohmdprojection.arr[f2(0,0)];
         //float m03 = ohmdprojection[f2(0,3)];
         //float m10 = ohmdprojection[f2(1,3)];
-        float m11 = ohmdprojection[f2(1,1)];
+        float m11 = ohmdprojection.arr[f2(1,1)];
         //float m13 = ohmdprojection[f2(1,3)];
-        float m23 = ohmdprojection[f2(2,3)];
-        float m22 = ohmdprojection[f2(2,2)];
-        float m12 = ohmdprojection[f2(1,2)];
-        float m02 = ohmdprojection[f2(0,2)];
+        float m23 = ohmdprojection.arr[f2(2,3)];
+        float m22 = ohmdprojection.arr[f2(2,2)];
+        float m12 = ohmdprojection.arr[f2(1,2)];
+        float m02 = ohmdprojection.arr[f2(0,2)];
 
         float near   = m23/(m22-1);
         float far    = m23/(m22+1);
@@ -557,12 +652,45 @@ public:
         *pfTop    = -   (m12+1)/m11;
         *pfLeft   =     (m02-1)/m00;
         *pfRight  =     (m02+1)/m00;
+        
+        DriverLog("m 00 %f, 11 %f, 22 %f, 12 %f, 02 %f\n", m00, m11, m23, m22, m12, m02);
 
+        DriverLog("ohmd projection\n%f %f %f %f\n%f %f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
+            ohmdprojection.arr[0], ohmdprojection.arr[1], ohmdprojection.arr[2], ohmdprojection.arr[3],
+            ohmdprojection.arr[4], ohmdprojection.arr[5], ohmdprojection.arr[6], ohmdprojection.arr[7],
+            ohmdprojection.arr[8], ohmdprojection.arr[9], ohmdprojection.arr[10], ohmdprojection.arr[11],
+            ohmdprojection.arr[12], ohmdprojection.arr[13], ohmdprojection.arr[14], ohmdprojection.arr[15]
+        );
+        
         DriverLog("projectionraw values lrtb, near far: %f %f %f %f | %f %f\n", *pfLeft, *pfRight, *pfTop, *pfBottom, near, far);
+        
+        //DriverLog("angles %f %f %f\n", yaw, pitch, roll);
     }
 
     DistortionCoordinates_t ComputeDistortion( EVREye eEye, float fU, float fV )
     {
+        float angle = (eEye == Eye_Left ? rotation_left : rotation_right);
+        
+        //DriverLog("Eye %d before: %f %f\n", eEye, fU, fV);
+                
+        if (angle > -5 && angle < 5) {
+        } else if (angle > 85 && angle < 95) {
+            float tmp = fV;
+            fV = fU;
+            fU = tmp;
+        } else if (angle > -95 && angle < -85) {
+            float tmp = fV;
+            fV = fU;
+            fU = 1.f - tmp;
+        } else {
+            float x = 0 * fU + -1 * fV;
+            float y = -1 * fU + 0 * 0 * fV;
+            fU = x;
+            fV = y;
+        }
+        
+        //DriverLog("Eye %d after: %f %f\n", eEye, fU, fV);
+        
         int hmd_w;
         int hmd_h;
         ohmd_device_geti(hmd, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &hmd_w);
@@ -705,6 +833,9 @@ private:
     float m_flSecondsFromVsyncToPhotons;
     float m_flDisplayFrequency;
     float m_flIPD;
+    
+    float rotation_left = 0.0;
+    float rotation_right = 0.0;
 };
 
 //-----------------------------------------------------------------------------
