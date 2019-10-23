@@ -676,7 +676,7 @@ public:
         if (angle > -5 && angle < 5) {
         } else if (angle > 85 && angle < 95) {
             float tmp = fV;
-            fV = fU;
+            fV = 1. - fU;
             fU = tmp;
         } else if (angle > -95 && angle < -85) {
             float tmp = fV;
