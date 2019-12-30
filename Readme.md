@@ -95,6 +95,12 @@ This method is simpler to build the driver and builds a driver fully compatible 
 
 ## Configuration:
 
+### Display refresh rate
+
+To tell SteamVR to use a speciifc display refresh rate for the HMD, consider editing `displayFrequency` in SteamVR-OpenHMD/build/resources/settings/default.vrsettings.
+
+### OpenHMD devices
+
 Upstream pull request to follow: https://github.com/OpenHMD/OpenHMD/issues/8
 
 For now. $HOME/.ohmd_config.txt is used.
