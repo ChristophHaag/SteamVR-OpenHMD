@@ -34,15 +34,8 @@ using namespace vr;
 #endif
 
 ohmd_context* ctx;
-ohmd_device* hmd = NULL;
-ohmd_device* hmdtracker = NULL;
-ohmd_device* lcontroller = NULL;
-ohmd_device* rcontroller = NULL;
-
 
 class COpenHMDDeviceDriverController;
-COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerL;
-COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerR;
 
 
 // gets float values from the device and prints them
@@ -85,6 +78,7 @@ public:
         DriverLog("Created watchdog object\n");
         m_pWatchdogThread = nullptr;
     }
+    virtual ~CWatchdogDriver_OpenHMD() {}
 
     virtual EVRInitError Init( vr::IVRDriverContext *pDriverContext ) ;
     virtual void Cleanup() ;
@@ -156,30 +150,147 @@ EVRInitError CWatchdogDriver_OpenHMD::Init( vr::IVRDriverContext *pDriverContext
     CleanupDriverLog();
 }
 
-vr::TrackedDeviceIndex_t lcindex;
-vr::TrackedDeviceIndex_t rcindex;
 class COpenHMDDeviceDriverController : public vr::ITrackedDeviceServerDriver /*, public vr::IVRControllerComponent */ {
 public:
     int index;
-    COpenHMDDeviceDriverController(int index) : index(index) {
-        DriverLog("construct controller object %d\n", index);
-        this->index = index;
+    ohmd_device* device;
+    int device_idx;
+
+    COpenHMDDeviceDriverController(int index, ohmd_device* _device, int _device_idx) :
+		index(index), device(_device), device_idx(_device_idx) {
+        DriverLog("construct controller object %d (OpenHMD device %d)\n", index, device_idx);
+        m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
     }
+    virtual ~COpenHMDDeviceDriverController() {}
+
     EVRInitError Activate( vr::TrackedDeviceIndex_t unObjectId )
     {
         DriverLog("activate controller %d: %d\n", index, unObjectId);
-        if (index == 0) {
-            lcindex = unObjectId;
-        } else {
-            rcindex = unObjectId;
+        m_unObjectId = unObjectId;
+
+        if (this->device == NULL) {
+          return VRInitError_Init_InterfaceNotFound;
         }
+
+        m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer( m_unObjectId );
+
+        const char *controllerModel = ohmd_list_gets(ctx, device_idx, OHMD_PRODUCT);
+
+	int device_flags = 0;
+	ohmd_list_geti(ctx, device_idx, OHMD_DEVICE_FLAGS, &device_flags);
+
+        vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, controllerModel);
+        //vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, controllerModel);
+        vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, "vr_tracker_vive_1_0");
+	//vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, "1" );
+        vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ControllerType_String, "openhmd_controller" );
+
+        // return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
+        vr::VRProperties()->SetUint64Property( m_ulPropertyContainer, Prop_CurrentUniverseId_Uint64, 2 );
+
+        vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, vr::TrackedDeviceClass_Controller);
+
+        // avoid "not fullscreen" warnings from vrmonitor
+        vr::VRProperties()->SetBoolProperty( m_ulPropertyContainer, Prop_IsOnDesktop_Bool, false );
+
+	if (device_flags & OHMD_DEVICE_FLAGS_LEFT_CONTROLLER) {
+           DriverLog("Left Controller\n");
+           vr::VRProperties()->SetInt32Property( m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_LeftHand);
+	} else {
+           DriverLog("Right Controller\n");
+           vr::VRProperties()->SetInt32Property( m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
+	}
+
+        vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_InputProfilePath_String, "{openhmd}/input/openhmd_controller_profile.json" );
+	vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_LegacyInputProfile_String, "openhmd_controller");
+
+        int control_count;
+        ohmd_device_geti(device, OHMD_CONTROL_COUNT, &control_count);
+        if (control_count > 64)
+          control_count = 64;
+
+        const char* controls_fn_str[] = { "generic", "trigger", "trigger_click", "squeeze", "menu", "home",
+                "analog-x", "analog-y", "anlog_press", "button-a", "button-b", "button-x", "button-y",
+                "volume-up", "volume-down", "mic-mute"};
+        const char* controls_type_str[] = {"digital", "analog"};
+
+        int controls_fn[64];
+        int controls_types[64];
+
+        ohmd_device_geti(device, OHMD_CONTROLS_HINTS, controls_fn);
+        ohmd_device_geti(device, OHMD_CONTROLS_TYPES, controls_types);
+
+        for(int i = 0; i < control_count; i++){
+          DriverLog("%s (%s)%s\n", controls_fn_str[controls_fn[i]], controls_type_str[controls_types[i]], i == control_count - 1 ? "" : ", ");
+          const char *control_map = NULL;
+
+          m_buttons[i] = k_ulInvalidInputComponentHandle;
+          m_analogControls[i] = k_ulInvalidInputComponentHandle;
+
+          switch (controls_fn[i]) {
+            case OHMD_GENERIC:
+              control_map = "/input/generic/click";
+              break;
+            case OHMD_TRIGGER:
+              control_map = "/input/trigger/value";
+              break;
+            case OHMD_TRIGGER_CLICK:
+              control_map = "/input/trigger/click";
+              break;
+            case OHMD_SQUEEZE:
+              control_map = "/input/grip/value";
+              break;
+            case OHMD_MENU:
+              control_map = "/input/menu/click";
+              break;
+            case OHMD_HOME:
+              control_map = "/input/home/click";
+              break;
+            case OHMD_ANALOG_X:
+              control_map = "/input/joystick/x";
+              break;
+            case OHMD_ANALOG_Y:
+              control_map = "/input/joystick/y";
+              break;
+            case OHMD_ANALOG_PRESS:
+              control_map = "/input/joystick/click";
+              break;
+            case OHMD_BUTTON_A:
+              control_map = "/input/a/click";
+              break;
+            case OHMD_BUTTON_B:
+              control_map = "/input/b/click";
+              break;
+            case OHMD_BUTTON_X:
+              control_map = "/input/x/click";
+              break;
+            case OHMD_BUTTON_Y:
+              control_map = "/input/y/click";
+              break;
+
+            default:
+              break;
+          }
+
+          /* We fall through here for generic buttons */
+          if (control_map == NULL)
+            continue;
+
+          if (controls_types[i] == OHMD_DIGITAL) {
+            vr::VRDriverInput()->CreateBooleanComponent( m_ulPropertyContainer, control_map, m_buttons + i);
+          }
+          else {
+            vr::VRDriverInput()->CreateScalarComponent( m_ulPropertyContainer, control_map, m_analogControls + i, VRScalarType_Absolute, VRScalarUnits_NormalizedOneSided);
+          }
+        }
+
         return VRInitError_None;
     }
 
     void Deactivate()
     {
         DriverLog("deactivate controller\n");
-        //m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
+        m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
     }
 
     void EnterStandby()
@@ -210,37 +321,58 @@ public:
 
     DriverPose_t GetPose()
     {
-        DriverPose_t pose = { 0 };
-        pose.poseIsValid = true;
-        pose.result = TrackingResult_Running_OK;
-        pose.deviceIsConnected = true;
+	DriverPose_t pose = { 0 };
+	pose.poseIsValid = true;
+	pose.result = TrackingResult_Running_OK;
+	pose.deviceIsConnected = true;
 
-        ohmd_device* d = index == 0 ? lcontroller : rcontroller;
-            
-        ohmd_ctx_update(ctx);
+	float quat[4];
+	ohmd_device_getf(device, OHMD_ROTATION_QUAT, quat);
+	pose.qRotation.x = quat[0];
+	pose.qRotation.y = quat[1];
+	pose.qRotation.z = quat[2];
+	pose.qRotation.w = quat[3];
 
-        float quat[4];
-        ohmd_device_getf(d, OHMD_ROTATION_QUAT, quat);
-        pose.qRotation.x = quat[0];
-        pose.qRotation.y = quat[1];
-        pose.qRotation.z = quat[2];
-        pose.qRotation.w = quat[3];
+	float pos[3];
+	ohmd_device_getf(device, OHMD_POSITION_VECTOR, pos);
+	pose.vecPosition[0] = pos[0];
+	pose.vecPosition[1] = pos[1];
+	pose.vecPosition[2] = pos[2];
 
-        float pos[3];
-        ohmd_device_getf(d, OHMD_POSITION_VECTOR, pos);
-        pose.vecPosition[0] = pos[0];
-        pose.vecPosition[1] = pos[1];
-        pose.vecPosition[2] = pos[2];
+	// DriverLog("get controller %d pose %f %f %f %f, %f %f %f\n", index, quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
 
-        //DriverLog("get controller %d pose %f %f %f %f, %f %f %f\n", index, quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
+	pose.qWorldFromDriverRotation = identityquat;
+	pose.qDriverFromHeadRotation = identityquat;
+	pose.vecDriverFromHeadTranslation[0] = 0.f;
+	pose.vecDriverFromHeadTranslation[1] = 0.f;
+	pose.vecDriverFromHeadTranslation[2] = 0.f;
 
-        pose.qWorldFromDriverRotation = identityquat;
-        pose.qDriverFromHeadRotation = identityquat;
+	return pose;
+    }
 
-        return pose;
+    void RunFrame() {
+        vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(), sizeof( DriverPose_t ) );
+
+        int control_count;
+        float control_state[256];
+
+        ohmd_device_geti(device, OHMD_CONTROL_COUNT, &control_count);
+        if (control_count > 64)
+          control_count = 64;
+
+        ohmd_device_getf(device, OHMD_CONTROLS_STATE, control_state);
+
+        for (int i = 0; i < control_count; i++) {
+          if (m_buttons[i] != k_ulInvalidInputComponentHandle) {
+            vr::VRDriverInput()->UpdateBooleanComponent( m_buttons[i], control_state[i] != 0, 0 );
+          }
+          else if (m_analogControls[i] != k_ulInvalidInputComponentHandle)
+            vr::VRDriverInput()->UpdateScalarComponent( m_analogControls[i], control_state[i], 0 );
+        }
     }
 
     VRControllerState_t controllerstate;
+
     VRControllerState_t GetControllerState() {
     DriverLog("get controller state\n");
     //return controllerstate;
@@ -265,44 +397,29 @@ public:
         return m_sSerialNumber;
     }
 
-    bool exists() {
-        return index == 0 ? lcontroller != NULL : rcontroller != NULL;
-    }
-
 private:
     std::string m_sSerialNumber = "Controller serial number " + std::to_string(index);
     std::string m_sModelNumber = "Controller model number " + std::to_string(index);
+    vr::TrackedDeviceIndex_t m_unObjectId;
+    vr::PropertyContainerHandle_t m_ulPropertyContainer;
+
+    /* Generic button controls */
+    vr::VRInputComponentHandle_t m_buttons[64]; /* Maximum components we support */
+    /* Analog controls */
+    vr::VRInputComponentHandle_t m_analogControls[64]; /* Maximum components we support */
 };
 
 class COpenHMDDeviceDriver final : public vr::ITrackedDeviceServerDriver, public vr::IVRDisplayComponent
 {
 public:
-    COpenHMDDeviceDriver(  )
+    COpenHMDDeviceDriver(int hmddisplay_idx, int hmdtracker_idx)
     {
-        ctx = ohmd_ctx_create();
-        int num_devices = ohmd_ctx_probe(ctx);
-        if(num_devices < 0){
-            DriverLog("failed to probe devices: %s\n", ohmd_ctx_get_error(ctx));
-        }
+        hmd = ohmd_list_open_device(ctx, hmddisplay_idx);
 
-        for(int i = 0; i < num_devices; i++){
-            DriverLog("device %d\n", i);
-            DriverLog("  vendor:  %s\n", ohmd_list_gets(ctx, i, OHMD_VENDOR));
-            DriverLog("  product: %s\n", ohmd_list_gets(ctx, i, OHMD_PRODUCT));
-            DriverLog("  path:    %s\n\n", ohmd_list_gets(ctx, i, OHMD_PATH));
-        }
-
-        int hmddisplay = get_configvalues()[0];
-        int hmdtrackerindex = get_configvalues()[1];
-        int leftcontroller = get_configvalues()[2];
-        int rightcontroller = get_configvalues()[3];
-
-        DriverLog("Using HMD Display %d, HMD Tracker %d, Left Controller %d, Right Controller %d\n", hmddisplay, hmdtrackerindex, leftcontroller, rightcontroller);
-        hmd = ohmd_list_open_device(ctx, hmddisplay);
-
-        if (hmdtrackerindex != -1 && hmdtrackerindex != hmddisplay) hmdtracker = ohmd_list_open_device(ctx, hmdtrackerindex);
-        if (leftcontroller != -1) lcontroller = ohmd_list_open_device(ctx, leftcontroller);
-        if (rightcontroller != -1) rcontroller = ohmd_list_open_device(ctx, rightcontroller);
+        if (hmdtracker_idx != -1 && hmdtracker_idx != hmddisplay_idx)
+	    hmdtracker = ohmd_list_open_device(ctx, hmdtracker_idx);
+	else
+	    hmdtracker = NULL;
 
         if(!hmd){
             DriverLog("failed to open device: %s\n", ohmd_ctx_get_error(ctx));
@@ -386,7 +503,7 @@ public:
         DriverLog("driver_openhmd: Distortion values a=%f b=%f c=%f d=%f\n", distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3]);
     }
 
-    ~COpenHMDDeviceDriver()
+    virtual ~COpenHMDDeviceDriver()
     {
     }
 
@@ -773,7 +890,6 @@ public:
         pose.deviceIsConnected = true;
 
         ohmd_device* d = hmdtracker ? hmdtracker : hmd;
-        ohmd_ctx_update(ctx);
 
         float quat[4];
         ohmd_device_getf(d, OHMD_ROTATION_QUAT, quat);
@@ -807,16 +923,15 @@ public:
         if ( m_unObjectId != vr::k_unTrackedDeviceIndexInvalid )
         {
             vr::VRServerDriverHost()->TrackedDevicePoseUpdated( m_unObjectId, GetPose(), sizeof( DriverPose_t ) );
-            if (m_OpenHMDDeviceDriverControllerL->exists())
-                vr::VRServerDriverHost()->TrackedDevicePoseUpdated( lcindex, m_OpenHMDDeviceDriverControllerL->GetPose(), sizeof( DriverPose_t ) );
-            if (m_OpenHMDDeviceDriverControllerR->exists())
-                vr::VRServerDriverHost()->TrackedDevicePoseUpdated( rcindex, m_OpenHMDDeviceDriverControllerR->GetPose(), sizeof( DriverPose_t ) );
         }
     }
 
     std::string GetSerialNumber() const { return m_sSerialNumber; }
 
 private:
+    ohmd_device* hmd = NULL;
+    ohmd_device* hmdtracker = NULL;
+
     vr::TrackedDeviceIndex_t m_unObjectId;
     vr::PropertyContainerHandle_t m_ulPropertyContainer;
 
@@ -848,6 +963,7 @@ public:
         : m_OpenHMDDeviceDriver( NULL )
     {
     }
+    virtual ~CServerDriver_OpenHMD() {}
 
     virtual EVRInitError Init( vr::IVRDriverContext *pDriverContext ) ;
     virtual void Cleanup() ;
@@ -859,6 +975,8 @@ public:
 
 private:
     COpenHMDDeviceDriver *m_OpenHMDDeviceDriver;
+    COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerL;
+    COpenHMDDeviceDriverController *m_OpenHMDDeviceDriverControllerR;
 };
 
 CServerDriver_OpenHMD g_serverDriverOpenHMD;
@@ -868,16 +986,43 @@ EVRInitError CServerDriver_OpenHMD::Init( vr::IVRDriverContext *pDriverContext )
     VR_INIT_SERVER_DRIVER_CONTEXT( pDriverContext );
     InitDriverLog( vr::VRDriverLog() );
 
-    m_OpenHMDDeviceDriver = new COpenHMDDeviceDriver();
+    ctx = ohmd_ctx_create();
+    int num_devices = ohmd_ctx_probe(ctx);
+    if(num_devices < 0){
+        DriverLog("failed to probe devices: %s\n", ohmd_ctx_get_error(ctx));
+    }
+
+    for(int i = 0; i < num_devices; i++){
+        DriverLog("device %d\n", i);
+        DriverLog("  vendor:  %s\n", ohmd_list_gets(ctx, i, OHMD_VENDOR));
+        DriverLog("  product: %s\n", ohmd_list_gets(ctx, i, OHMD_PRODUCT));
+        DriverLog("  path:    %s\n\n", ohmd_list_gets(ctx, i, OHMD_PATH));
+    }
+
+    int hmddisplay_idx = get_configvalues()[0];
+    int hmdtracker_idx = get_configvalues()[1];
+    int lcontroller_idx = get_configvalues()[2];
+    int rcontroller_idx = get_configvalues()[3];
+
+    DriverLog("Using HMD Display %d, HMD Tracker %d, Left Controller %d, Right Controller %d\n", hmddisplay_idx, hmdtracker_idx, lcontroller_idx, rcontroller_idx);
+
+    m_OpenHMDDeviceDriver = new COpenHMDDeviceDriver(hmddisplay_idx, hmdtracker_idx);
     vr::VRServerDriverHost()->TrackedDeviceAdded( m_OpenHMDDeviceDriver->GetSerialNumber().c_str(), vr::TrackedDeviceClass_HMD, m_OpenHMDDeviceDriver );
 
-    m_OpenHMDDeviceDriverControllerL = new COpenHMDDeviceDriverController(0);
-    m_OpenHMDDeviceDriverControllerR = new COpenHMDDeviceDriverController(1);
-    if (m_OpenHMDDeviceDriverControllerL->exists()) {
-        vr::VRServerDriverHost()->TrackedDeviceAdded( m_OpenHMDDeviceDriverControllerL->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_OpenHMDDeviceDriverControllerL );
+    if (lcontroller_idx != -1) {
+	ohmd_device* lcontroller = ohmd_list_open_device(ctx, lcontroller_idx);
+	if (lcontroller)
+		m_OpenHMDDeviceDriverControllerL = new COpenHMDDeviceDriverController(0, lcontroller, lcontroller_idx);
+	if (m_OpenHMDDeviceDriverControllerL)
+		vr::VRServerDriverHost()->TrackedDeviceAdded( m_OpenHMDDeviceDriverControllerL->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_OpenHMDDeviceDriverControllerL );
     }
-    if (m_OpenHMDDeviceDriverControllerR->exists()) {
-        vr::VRServerDriverHost()->TrackedDeviceAdded(  m_OpenHMDDeviceDriverControllerR->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_OpenHMDDeviceDriverControllerR );
+
+    if (rcontroller_idx != -1) {
+	ohmd_device *rcontroller = ohmd_list_open_device(ctx, rcontroller_idx);
+	if (rcontroller)
+		m_OpenHMDDeviceDriverControllerR = new COpenHMDDeviceDriverController(1, rcontroller, rcontroller_idx);
+	if (m_OpenHMDDeviceDriverControllerR)
+		vr::VRServerDriverHost()->TrackedDeviceAdded(  m_OpenHMDDeviceDriverControllerR->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_OpenHMDDeviceDriverControllerR );
     }
 
     return VRInitError_None;
@@ -888,15 +1033,31 @@ void CServerDriver_OpenHMD::Cleanup()
     CleanupDriverLog();
     delete m_OpenHMDDeviceDriver;
     m_OpenHMDDeviceDriver = NULL;
+
+    if (m_OpenHMDDeviceDriverControllerL)
+      delete m_OpenHMDDeviceDriverControllerL;
+    if (m_OpenHMDDeviceDriverControllerR)
+      delete m_OpenHMDDeviceDriverControllerR;
+
+#if 0
+    // Disabled for now because the Rift camera thread sometimes hangs on shutdown...
+    if (ctx)
+        ohmd_ctx_destroy (ctx);
+#endif
 }
 
 
 void CServerDriver_OpenHMD::RunFrame()
 {
+    ohmd_ctx_update(ctx);
+
     if ( m_OpenHMDDeviceDriver )
-    {
         m_OpenHMDDeviceDriver->RunFrame();
-    }
+
+    if (m_OpenHMDDeviceDriverControllerL)
+        m_OpenHMDDeviceDriverControllerL->RunFrame();
+    if (m_OpenHMDDeviceDriverControllerR)
+        m_OpenHMDDeviceDriverControllerR->RunFrame();
 }
 
 //-----------------------------------------------------------------------------

@@ -1,0 +1,87 @@
+{
+   "action_manifest_version" : 1,
+   "app_key" : "openvr.component.vrcompositor",
+   "bindings" : {
+      "/actions/lasermouse" : {
+         "sources" : [
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/lasermouse/in/LeftClick"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/lasermouse/in/LeftClick"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/trigger"
+            }
+         ],
+         "poses": [{
+            "output": "/actions/lasermouse/in/Pointer",
+            "path": "/user/hand/left/pose/raw"
+          },
+          {
+            "output": "/actions/lasermouse/in/Pointer",
+            "path": "/user/hand/right/pose/raw"
+          }
+	]
+      },
+      "/actions/lasermouse_secondary": {
+        "sources": [{
+            "inputs": {
+              "click": {
+                "output": "/actions/lasermouse_secondary/in/SwitchLaserHand"
+              }   
+            },  
+            "mode": "button",
+            "path": "/user/hand/left/input/trigger"
+          },  
+          {   
+            "inputs": {
+              "click": {
+                "output": "/actions/lasermouse_secondary/in/SwitchLaserHand"
+              }   
+            },  
+            "mode": "button",
+            "path": "/user/hand/right/input/trigger"
+          } 
+        ]   
+      },
+      "/actions/system" : {
+         "sources" : [
+            {
+               "inputs" : {
+                   "held": {
+                           "output": "/actions/system/in/SystemButtonChord"
+                   },
+                   "long": {
+                           "long_press_delay": 1.5,
+                           "output": "/actions/system/in/showpowermenu"
+                   },
+                   "click": {
+                           "output": "/actions/system/in/ToggleDashboard"
+                   },
+                   "single": {
+                           "output": "/actions/system/in/ToggleDashboard"
+                   },
+                   "double": {
+                           "output": "/actions/system/in/ToggleRoomView"
+                   }
+               },
+               "mode" : "complex_button",
+               "path" : "/user/hand/right/input/home"
+            }
+         ]
+      }
+   },
+   "controller_type" : "openhmd_controller",
+   "description" : "",
+   "name" : "VR Compositor configuration for OpenHMD Controller"
+}
