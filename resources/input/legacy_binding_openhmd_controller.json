@@ -1,0 +1,122 @@
+{
+   "bindings" : {
+      "/actions/legacy" : {
+         "haptics" : [
+            {
+               "output" : "/actions/legacy/out/left_haptic",
+               "path" : "/user/hand/left/output/haptic"
+            },
+            {
+               "output" : "/actions/legacy/out/right_haptic",
+               "path" : "/user/hand/right/output/haptic"
+            }
+         ],
+         "poses" : [
+            {
+               "output" : "/actions/legacy/in/left_pose",
+               "path" : "/user/hand/left/pose/raw"
+            },
+            {
+               "output" : "/actions/legacy/in/right_pose",
+               "path" : "/user/hand/right/pose/raw"
+            }
+         ],
+         "sources" : [
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/left_system_press"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/menu"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/right_system_press"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/home"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/left_grip_press"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/grip"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/right_grip_press"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/grip"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/left_axis1_press"
+                  },
+                  "pull" : {
+                     "output" : "/actions/legacy/in/left_axis1_value"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/left_axis1_touch"
+                  }
+               },
+               "mode" : "trigger",
+               "path" : "/user/hand/left/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/right_axis1_press"
+                  },
+                  "pull" : {
+                     "output" : "/actions/legacy/in/right_axis1_value"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/right_axis1_touch"
+                  }
+               },
+               "mode" : "trigger",
+               "path" : "/user/hand/right/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/right_applicationmenu_press"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/right_applicationmenu_touch"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/b"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/left_applicationmenu_press"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/left_applicationmenu_touch"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/y"
+            }
+         ]
+      }
+   },
+   "controller_type" : "openhmd_controller",
+   "description" : "",
+   "name" : "Default binding for OpenHMD Controller for legacy applications"
+}
+

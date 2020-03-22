@@ -1,0 +1,98 @@
+{
+        "jsonid": "input_profile",
+        "controller_type": "openhmd_controller",
+	"legacy_profile": "openhmd_controller",
+        "legacy_binding": "{openhmd}/input/legacy_binding_openhmd_controller.json",
+        "input_bindingui_mode": "controller_handed",
+	"device_class" : "TrackedDeviceClass_Controller",
+	"resource_root" : "openhmd",
+	"driver_name" : "openhmd",
+	"should_show_binding_errors" :  true,
+        "input_bindingui_right": {
+                "image": "{openhmd}/icons/openhmd_controller.svg"
+        },
+        "input_bindingui_left": {
+                "image": "{openhmd}/icons/openhmd_controller.svg"
+        },
+        "input_source": {
+                "/input/joystick" : { 
+                    "type" : "joystick",
+                    "binding_image_point" : [ 99, 99 ],
+                    "click" : true,
+                    "touch" : true,
+                    "order" : 1
+                },
+                "/input/a": {
+                        "binding_image_point": [ 80, 60 ],
+                        "type": "button",
+			"click" : true,
+			"touch" : false,
+                        "order": 1
+                },
+                "/input/b": {
+                        "binding_image_point": [ 250, 60 ],
+                        "type": "button",
+			"click" : true,
+			"touch" : false,
+                        "order": 2
+                },
+                "/input/x": {
+                        "binding_image_point": [ 450, 60 ],
+                        "type": "button",
+			"click" : true,
+			"touch" : false,
+                        "order": 3
+                },
+                "/input/y": {
+                        "binding_image_point": [ 450, 60 ],
+                        "type": "button",
+			"click" : true,
+			"touch" : false,
+                        "order": 4
+                },
+                "/input/home": {
+                        "binding_image_point": [ 450, 60 ],
+                        "type": "button",
+			"click" : true,
+			"touch" : false,
+			"side" : "right",
+                        "order": 3
+                },
+                "/input/menu": {
+                        "binding_image_point": [ 450, 60 ],
+                        "type": "button",
+			"click" : true,
+			"touch" : false,
+			"side" : "left",
+                        "order": 4
+                },
+                "/input/trigger": {
+                        "binding_image_point": [ 450, 60 ],
+                        "type": "trigger",
+			"touch" : true,
+			"value" : true,
+                        "order": 4
+                },
+                "/input/grip": {
+                        "binding_image_point": [ 450, 60 ],
+                        "type": "trigger",
+			"touch" : true,
+			"value" : true,
+                        "order": 4
+                },
+                "/pose/raw": {
+                        "type": "pose",
+                        "binding_image_point": [124, 96]
+                }
+        },
+        "default_bindings": [{
+                        "app_key": "openvr.component.vrcompositor",
+                        "binding_url": "vrcompositor_bindings_openhmd.json"
+                },
+                {
+                        "app_key": "openvr.tool.steamvr_environments",
+                        "binding_url": "steamvr_environments_bindings_openhmd.json"
+                }
+        ]
+}
+
