@@ -34,6 +34,14 @@ OpenHMD is included as a git submodule. An OpenHMD shared library will be built 
 
 If you use the Vive and want to use the (imperfect) values from https://github.com/OpenHMD/OpenHMD/pull/90, go to external/openhmd and run `git pull origin pull/90/head` before the make step to merge the pull request locally.
 
+# Install udev rules
+
+OpenHMD requires direct access to the USB interface of VR HMDs.
+
+It's recommended to install xr-hardware, a well maintained collection of udev rules.
+
+https://gitlab.freedesktop.org/monado/utilities/xr-hardware
+
 ## Run (easy for linux):
 
 Run `./register.sh`.
@@ -143,7 +151,9 @@ Alternatively in the Steam GUI set the SteamVR launch options to
 
 You can verify that the environment variable is set with `grep "driver_openhmd: Vendor:" ~/.steam/steam/logs/vrserver.txt`.
 
-## Udev Rules:
+## Creating additional Udev Rules:
+
+The VR hardware in this section is already supported by xr-hardware. If you want to create your own udev rules, here is how.
 
 To allow OpenHMD to access any devices, udev rules need to be set on most linux systems.
 Add a file named `83-hmd.rules` to `/etc/udev/rules.d/`, or your distributions equivalent.
