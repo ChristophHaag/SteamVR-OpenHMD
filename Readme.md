@@ -17,6 +17,33 @@ Possible improvements:
     cd subprojects/openhmd
     git pull origin master
 
+## Builing on windows (incomplete)
+
+    install [mingw-64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download)
+
+    add "C:\Program Files (x86)\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin" to path (asuming you didn't change the install path)
+
+    set the source and build directories in cmake-gui (you could use the command line but IDK the commands for it)
+
+    use cmake with mingw makefiles but specify the native compilers
+
+    C should be "C:/Program Files (x86)/mingw-w64/i686-8.1.0-posix-dwarf-rt_v6-rev0/mingw32/bin/i686-w64-mingw32-gcc.exe" 
+
+    C++ should be "C:/Program Files (x86)/mingw-w64/i686-8.1.0-posix-dwarf-rt_v6-rev0/mingw32/bin/i686-w64-mingw32-g++.exe" 
+
+    fortran should be "C:/Program Files (x86)/mingw-w64/i686-8.1.0-posix-dwarf-rt_v6-rev0/mingw32/bin/i686-w64-mingw32-gfortran.exe"
+
+    if openhmd.pc isn't in your build directory then copy the one from builddir\subprojects\openhmd.pc
+
+    cd into the directory with "makefile" and run "mingw32-make"
+
+    and then "mingw32-make install"
+
+    there is no path.sh for windows yet
+
+    so from here do your best to adapt the "run for linux (detailed)" section to windows (see WindowsPathsBase.sh for default install locations). good luck!
+
+
 ## Install needed packages (Ubuntu):
 
     sudo apt-get install build-essential cmake libhidapi-dev 
