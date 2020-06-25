@@ -1,7 +1,8 @@
 project(
 	'steamvr-openhmd', 'cpp',
 	default_options : 'cpp_std=c++11',
-	version : '0.0.1'
+	version : '0.0.1',
+	meson_version:  '>=0.54'
 )
 
 sources = [
@@ -12,7 +13,7 @@ sources = [
 
 includes = include_directories(['./subprojects/openhmd/include', './subprojects/openvr'])
 
-openhmd_subproject = subproject('openhmd')
+openhmd_subproject = subproject('openhmd', default_options: ['default_library=static'])
 openhmd_lib = openhmd_subproject.get_variable('openhmd_lib')
 
 deps = [
