@@ -5,6 +5,8 @@
 #include <openvr_driver.h>
 #include "driverlog.h"
 
+#include <assert.h>
+
 #include <vector>
 #include <thread>
 #include <chrono>
@@ -17,6 +19,7 @@
 
 #include <openhmd.h>
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdio.h>
 
@@ -41,7 +44,9 @@ class COpenHMDDeviceDriverController;
 // gets float values from the device and prints them
 void print_infof(ohmd_device* hmd, const char* name, int len, ohmd_float_value val)
 {
-    float f[len];
+    float f[20];
+    assert (len <= 20);
+
     ohmd_device_getf(hmd, val, f);
     printf("%-25s", name);
     for(int i = 0; i < len; i++)
@@ -52,7 +57,9 @@ void print_infof(ohmd_device* hmd, const char* name, int len, ohmd_float_value v
 // gets int values from the device and prints them
 void print_infoi(ohmd_device* hmd, const char* name, int len, ohmd_int_value val)
 {
-    int iv[len];
+    int iv[20];
+    assert (len <= 20);
+
     ohmd_device_geti(hmd, val, iv);
     printf("%-25s", name);
     for(int i = 0; i < len; i++)
