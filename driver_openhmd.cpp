@@ -240,6 +240,7 @@ public:
         for(int i = 0; i < control_count; i++){
           DriverLog("%s (%s)%s\n", controls_fn_str[controls_fn[i]], controls_type_str[controls_types[i]], i == control_count - 1 ? "" : ", ");
           const char *control_map = NULL;
+          EVRScalarUnits analog_type = VRScalarUnits_NormalizedOneSided;
 
           m_buttons[i] = k_ulInvalidInputComponentHandle;
           m_analogControls[i] = k_ulInvalidInputComponentHandle;
@@ -265,9 +266,11 @@ public:
               break;
             case OHMD_ANALOG_X:
               control_map = "/input/joystick/x";
+              analog_type = VRScalarUnits_NormalizedTwoSided;
               break;
             case OHMD_ANALOG_Y:
               control_map = "/input/joystick/y";
+              analog_type = VRScalarUnits_NormalizedTwoSided;
               break;
             case OHMD_ANALOG_PRESS:
               control_map = "/input/joystick/click";
@@ -297,7 +300,7 @@ public:
             vr::VRDriverInput()->CreateBooleanComponent( m_ulPropertyContainer, control_map, m_buttons + i);
           }
           else {
-            vr::VRDriverInput()->CreateScalarComponent( m_ulPropertyContainer, control_map, m_analogControls + i, VRScalarType_Absolute, VRScalarUnits_NormalizedOneSided);
+            vr::VRDriverInput()->CreateScalarComponent( m_ulPropertyContainer, control_map, m_analogControls + i, VRScalarType_Absolute, analog_type);
           }
         }
 
@@ -435,7 +438,6 @@ public:
     COpenHMDDeviceDriver(int hmddisplay_idx, int hmdtracker_idx)
     {
         hmd = ohmd_list_open_device(ctx, hmddisplay_idx);
-
         if (hmdtracker_idx != -1 && hmdtracker_idx != hmddisplay_idx)
 	    hmdtracker = ohmd_list_open_device(ctx, hmdtracker_idx);
 	else
@@ -521,6 +523,9 @@ public:
         float distortion_coeffs[4];
         ohmd_device_getf(hmd, OHMD_UNIVERSAL_DISTORTION_K, &(distortion_coeffs[0]));
         DriverLog("driver_openhmd: Distortion values a=%f b=%f c=%f d=%f\n", distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3]);
+
+	/* Sleep for 1 second while activating to let the display connect */
+	std::this_thread::sleep_for( std::chrono::seconds(1) );
     }
 
     virtual ~COpenHMDDeviceDriver()
