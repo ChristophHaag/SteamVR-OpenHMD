@@ -108,14 +108,14 @@ void WatchdogThreadFunction(  )
         if ( (0x01 & GetAsyncKeyState( 'Y' )) != 0 )
         {
             // Y key was pressed.
-            vr::VRWatchdogHost()->WatchdogWakeUp();
+            vr::VRWatchdogHost()->WatchdogWakeUp(vr::TrackedDeviceClass_HMD);
         }
         std::this_thread::sleep_for( std::chrono::microseconds( 500 ) );
 #else
         DriverLog("Watchdog wakeup\n");
         // for the other platforms, just send one every five seconds
         std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-        vr::VRWatchdogHost()->WatchdogWakeUp();
+        vr::VRWatchdogHost()->WatchdogWakeUp(vr::TrackedDeviceClass_HMD);
 #endif
     }
     DriverLog("Watchdog exit\n");
@@ -219,7 +219,6 @@ public:
 	}
 
         vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_InputProfilePath_String, "{openhmd}/input/openhmd_controller_profile.json" );
-	vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_LegacyInputProfile_String, "openhmd_controller");
 
         int control_count;
         ohmd_device_geti(device, OHMD_CONTROL_COUNT, &control_count);
