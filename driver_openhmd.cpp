@@ -238,11 +238,12 @@ public:
 
         for(int i = 0; i < control_count; i++){
           DriverLog("%s (%s)%s\n", controls_fn_str[controls_fn[i]], controls_type_str[controls_types[i]], i == control_count - 1 ? "" : ", ");
-          const char *control_map = NULL;
+          const char *control_map = NULL, *touch_map = NULL;
           EVRScalarUnits analog_type = VRScalarUnits_NormalizedOneSided;
 
           m_buttons[i] = k_ulInvalidInputComponentHandle;
           m_analogControls[i] = k_ulInvalidInputComponentHandle;
+          m_touchControls[i] = k_ulInvalidInputComponentHandle;
 
           switch (controls_fn[i]) {
             case OHMD_GENERIC:
@@ -276,15 +277,19 @@ public:
               break;
             case OHMD_BUTTON_A:
               control_map = "/input/a/click";
+              touch_map = "/input/a/touch";
               break;
             case OHMD_BUTTON_B:
               control_map = "/input/b/click";
+              touch_map = "/input/b/touch";
               break;
             case OHMD_BUTTON_X:
               control_map = "/input/x/click";
+              touch_map = "/input/x/touch";
               break;
             case OHMD_BUTTON_Y:
               control_map = "/input/y/click";
+              touch_map = "/input/y/touch";
               break;
 
             default:
@@ -292,14 +297,16 @@ public:
           }
 
           /* We fall through here for generic buttons */
-          if (control_map == NULL)
-            continue;
-
-          if (controls_types[i] == OHMD_DIGITAL) {
-            vr::VRDriverInput()->CreateBooleanComponent( m_ulPropertyContainer, control_map, m_buttons + i);
+          if (control_map != NULL) {
+            if (controls_types[i] == OHMD_DIGITAL) {
+              vr::VRDriverInput()->CreateBooleanComponent( m_ulPropertyContainer, control_map, m_buttons + i);
+            }
+            else {
+              vr::VRDriverInput()->CreateScalarComponent( m_ulPropertyContainer, control_map, m_analogControls + i, VRScalarType_Absolute, analog_type);
+            }
           }
-          else {
-            vr::VRDriverInput()->CreateScalarComponent( m_ulPropertyContainer, control_map, m_analogControls + i, VRScalarType_Absolute, analog_type);
+	  if (touch_map != NULL) {
+              vr::VRDriverInput()->CreateScalarComponent( m_ulPropertyContainer, touch_map, m_touchControls + i, VRScalarType_Absolute, analog_type);
           }
         }
 
@@ -390,6 +397,10 @@ public:
           }
           else if (m_analogControls[i] != k_ulInvalidInputComponentHandle)
             vr::VRDriverInput()->UpdateScalarComponent( m_analogControls[i], control_state[i], 0 );
+	  /* If the control is not 0, mark it touched */
+          if (m_touchControls[i] != k_ulInvalidInputComponentHandle) {
+            vr::VRDriverInput()->UpdateScalarComponent( m_touchControls[i], control_state[i] == 0 ? 0.0 : 1.0, 0 );
+          }
         }
     }
 
@@ -429,6 +440,8 @@ private:
     vr::VRInputComponentHandle_t m_buttons[64]; /* Maximum components we support */
     /* Analog controls */
     vr::VRInputComponentHandle_t m_analogControls[64]; /* Maximum components we support */
+    /* Touch controls */
+    vr::VRInputComponentHandle_t m_touchControls[64]; /* Maximum components we support */
 };
 
 class COpenHMDDeviceDriver final : public vr::ITrackedDeviceServerDriver, public vr::IVRDisplayComponent

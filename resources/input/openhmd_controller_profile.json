@@ -19,35 +19,35 @@
                     "type" : "joystick",
                     "binding_image_point" : [ 99, 99 ],
                     "click" : true,
-                    "touch" : true,
+                    "touch" : false,
                     "order" : 1
                 },
                 "/input/a": {
                         "binding_image_point": [ 80, 60 ],
                         "type": "button",
 			"click" : true,
-			"touch" : false,
+			"touch" : true,
                         "order": 1
                 },
                 "/input/b": {
                         "binding_image_point": [ 250, 60 ],
                         "type": "button",
 			"click" : true,
-			"touch" : false,
+			"touch" : true,
                         "order": 2
                 },
                 "/input/x": {
                         "binding_image_point": [ 450, 60 ],
                         "type": "button",
 			"click" : true,
-			"touch" : false,
+			"touch" : true,
                         "order": 3
                 },
                 "/input/y": {
                         "binding_image_point": [ 450, 60 ],
                         "type": "button",
 			"click" : true,
-			"touch" : false,
+			"touch" : true,
                         "order": 4
                 },
                 "/input/home": {
@@ -69,14 +69,14 @@
                 "/input/trigger": {
                         "binding_image_point": [ 450, 60 ],
                         "type": "trigger",
-			"touch" : true,
+			"touch" : false,
 			"value" : true,
                         "order": 4
                 },
                 "/input/grip": {
                         "binding_image_point": [ 450, 60 ],
                         "type": "trigger",
-			"touch" : true,
+			"touch" : false,
 			"value" : true,
                         "order": 4
                 },
