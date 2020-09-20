@@ -1,4 +1,6 @@
 {
+   "action_manifest_version" : 0,
+   "alias_info" : {},
    "bindings" : {
       "/actions/legacy" : {
          "haptics" : [
@@ -43,19 +45,31 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/legacy/in/left_grip_press"
+                     "output" : "/actions/legacy/in/left_axis2_press"
+                  },
+                  "pull" : {
+                     "output" : "/actions/legacy/in/left_axis2_value1"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/left_axis2_touch"
                   }
                },
-               "mode" : "button",
+               "mode" : "trigger",
                "path" : "/user/hand/left/input/grip"
             },
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/legacy/in/right_grip_press"
+                     "output" : "/actions/legacy/in/right_axis2_press"
+                  },
+                  "pull" : {
+                     "output" : "/actions/legacy/in/right_axis2_value1"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/right_axis2_touch"
                   }
                },
-               "mode" : "button",
+               "mode" : "trigger",
                "path" : "/user/hand/right/input/grip"
             },
             {
@@ -111,12 +125,89 @@
                },
                "mode" : "button",
                "path" : "/user/hand/left/input/y"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/right_axis0_press"
+                  },
+                  "position" : {
+                     "output" : "/actions/legacy/in/right_axis0_value"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/right_axis0_touch"
+                  }
+               },
+               "mode" : "joystick",
+               "path" : "/user/hand/right/input/joystick"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/left_axis0_press"
+                  },
+                  "position" : {
+                     "output" : "/actions/legacy/in/left_axis0_value"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/left_axis0_touch"
+                  }
+               },
+               "mode" : "joystick",
+               "path" : "/user/hand/left/input/joystick"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/left_a_press"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/x"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/left_grip_press"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/left_grip_touch"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/grip"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/right_a_press"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/a"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/legacy/in/right_grip_press"
+                  },
+                  "touch" : {
+                     "output" : "/actions/legacy/in/right_grip_touch"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/grip"
             }
          ]
       }
    },
+   "category" : "legacy",
    "controller_type" : "openhmd_controller",
-   "description" : "",
-   "name" : "Default binding for OpenHMD Controller for legacy applications"
+   "name" : "Default binding for OpenHMD Controller for legacy applications",
+   "description" : "OpenHMD default legacy controller bindings",
+   "options" : {
+      "mirror_actions" : false,
+      "simulated_controller_type" : "none"
+   },
+   "simulated_actions" : []
 }
-
