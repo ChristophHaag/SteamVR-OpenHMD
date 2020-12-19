@@ -1,0 +1,47 @@
+{
+   "action_manifest_version" : 1,
+   "alias_info" : {},
+   "app_key" : "openvr.tool.steamvr_environments",
+   "bindings" : {
+      "/actions/default" : {
+         "sources" : [
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/default/in/togglemenu"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/b"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/default/in/showinventory"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/menu"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/default/in/lclick"
+                  }
+               },
+               "mode" : "button",
+               "parameters" : {
+                  "haptic_amplitude" : "0"
+               },
+               "path" : "/user/hand/right/input/trigger"
+            }
+        ]
+     }
+   },
+   "category" : "steamvr_input",
+   "controller_type" : "openhmd_controller",
+   "description" : "",
+   "name" : "SteamVR Home configuration for openhmd_controller",
+   "options" : {},
+   "simulated_actions" : []
+}
