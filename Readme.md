@@ -2,9 +2,9 @@
 
 # Status/TODO
 
-* controller buttons are currently unimplemented and pressing any button does nothing
-* controller models - OpenHMD doesn't provide a method ([yet](https://github.com/OpenHMD/OpenHMD/issues/119)) to get rendermodels, so default (Steam Gamepad controller) is used
-* Controllers are not used by default because of those limitations. To change the default you can use the config file mechanism (on Linux) or change the default config in ohmd_config.h in the else branch (index 2 and 3 are controllers) before compiling
+* controller bindings are WIP. Oculus CV1 Touch Controllers should work, with others YMMV.
+* controller models - OpenHMD doesn't provide a method ([yet](https://github.com/OpenHMD/OpenHMD/issues/119)) to get rendermodels.
+* Device selection is very basic. To change the default you can use the config file mechanism (on Linux) or change the default config in ohmd_config.h in the else branch (index 2 and 3 are controllers) before compiling
 
 Possible improvements:
 
