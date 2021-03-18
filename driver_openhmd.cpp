@@ -26,7 +26,7 @@
 using namespace vr;
 
 
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 #define HMD_DLL_EXPORT extern "C" __declspec( dllexport )
 #define HMD_DLL_IMPORT extern "C" __declspec( dllimport )
 #elif defined(__GNUC__) || defined(COMPILER_GCC) || defined(__APPLE__)
@@ -40,6 +40,12 @@ ohmd_context* ctx;
 
 class COpenHMDDeviceDriverController;
 
+#ifndef M_PI
+#define M_PI (3.14159265358979323846)
+#endif
+
+#undef near
+#undef far
 
 // gets float values from the device and prints them
 void print_infof(ohmd_device* hmd, const char* name, int len, ohmd_float_value val)
