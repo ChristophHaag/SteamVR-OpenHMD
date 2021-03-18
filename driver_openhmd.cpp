@@ -745,7 +745,7 @@ public:
         *pnWidth = outputViewportWidth;
         *pnHeight = outputViewportHeight / 2;
 
-        if (eEye == Eye_Left) {
+        if (eEye == Eye_Right) {
           *pnY = 0;
         } else {
           *pnY = outputViewportHeight / 2;
@@ -759,7 +759,7 @@ public:
         *pnWidth = outputViewportWidth;
         *pnHeight = outputViewportHeight / 2;
 
-        if (eEye == Eye_Right) {
+        if (eEye == Eye_Left) {
           *pnY = 0;
         } else {
           *pnY = outputViewportHeight / 2;
