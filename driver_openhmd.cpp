@@ -486,25 +486,25 @@ public:
         
         {
             std::stringstream buf;
-            buf << ohmd_list_gets(ctx, 0, OHMD_PRODUCT);
+            buf << ohmd_list_gets(ctx, hmddisplay_idx, OHMD_PRODUCT);
             buf << ": ";
-            buf << ohmd_list_gets(ctx, 0, OHMD_PATH);
+            buf << ohmd_list_gets(ctx, hmddisplay_idx, OHMD_PATH);
             m_sSerialNumber = buf.str();
         }
 
         {
             std::stringstream buf;
             buf << "OpenHMD: ";
-            buf << ohmd_list_gets(ctx, 0, OHMD_PRODUCT);
+            buf << ohmd_list_gets(ctx, hmddisplay_idx, OHMD_PRODUCT);
             m_sModelNumber = buf.str();
         }
-        
+
         // Important to pass vendor through. Gaze cursor is only available for "Oculus". So grab the first word.
         char const* vendor_override = getenv("OHMD_VENDOR_OVERRIDE");
         if (vendor_override) {
             m_sVendor = vendor_override;
         } else {
-            m_sVendor = ohmd_list_gets(ctx, 0, OHMD_VENDOR);
+            m_sVendor = ohmd_list_gets(ctx, hmddisplay_idx, OHMD_VENDOR);
             if (m_sVendor.find(' ') != std::string::npos) {
                 m_sVendor = m_sVendor.substr(0, m_sVendor.find(' '));
             }
