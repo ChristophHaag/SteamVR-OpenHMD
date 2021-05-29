@@ -165,11 +165,19 @@ public:
     int device_flags;
     DriverPose_t pose;
 
+    bool m_is_oculus;
+
     COpenHMDDeviceDriverController(int index, ohmd_device* _device, int _device_idx) :
 		index(index), device(_device), device_idx(_device_idx) {
         DriverLog("construct controller object %d (OpenHMD device %d)\n", index, device_idx);
         m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
         pose = { 0 };
+
+
+        if (strcmp(ohmd_list_gets(ctx, device_idx, OHMD_VENDOR), "Oculus VR, Inc.") == 0) {
+            m_is_oculus = true;
+            DriverLog("detected oculus controllers, using oculus input profile");
+        }
     }
     virtual ~COpenHMDDeviceDriverController() {}
 
@@ -190,9 +198,25 @@ public:
 
         vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, controllerModel);
         //vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, controllerModel);
-        vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, "vr_tracker_vive_1_0");
 	//vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, "1" );
-        vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ControllerType_String, "openhmd_controller" );
+        if (m_is_oculus) {
+            // steamapps/common/SteamVR/drivers/oculus/resources/input/touch_profile.json -> "controller_type": "oculus_touch"
+            vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ControllerType_String, "oculus_touch" );
+            vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_InputProfilePath_String, "{oculus}/input/touch_profile.json" );
+
+            if (device_flags & OHMD_DEVICE_FLAGS_LEFT_CONTROLLER) {
+                // steamapps/common/SteamVR/resources/rendermodels/oculus_cv1_controller_left
+                vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, "oculus_cv1_controller_left");
+            } else if (device_flags & OHMD_DEVICE_FLAGS_RIGHT_CONTROLLER) {
+                // steamapps/common/SteamVR/resources/rendermodels/oculus_cv1_controller_right
+                vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, "oculus_cv1_controller_right");
+            }
+        } else {
+            vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ControllerType_String, "openhmd_controller" );
+            vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_InputProfilePath_String, "{openhmd}/input/openhmd_controller_profile.json" );
+            vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, "vr_tracker_vive_1_0");
+        }
+
 
         // return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
         vr::VRProperties()->SetUint64Property( m_ulPropertyContainer, Prop_CurrentUniverseId_Uint64, 2 );
@@ -218,7 +242,6 @@ public:
 	   pose.vecPosition[2] = 0.15;
 	}
 
-        vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_InputProfilePath_String, "{openhmd}/input/openhmd_controller_profile.json" );
 
         int control_count;
         ohmd_device_geti(device, OHMD_CONTROL_COUNT, &control_count);
@@ -245,6 +268,8 @@ public:
           m_analogControls[i] = k_ulInvalidInputComponentHandle;
           m_touchControls[i] = k_ulInvalidInputComponentHandle;
 
+          // TODO: inputs match steamapps/common/SteamVR/drivers/oculus/resources/input/touch_profile.json
+          // but also support other controllers
           switch (controls_fn[i]) {
             case OHMD_GENERIC:
               control_map = "/input/generic/click";
@@ -259,10 +284,11 @@ public:
               control_map = "/input/grip/value";
               break;
             case OHMD_MENU:
-              control_map = "/input/menu/click";
+              control_map = "/input/system/click";
               break;
             case OHMD_HOME:
-              control_map = "/input/home/click";
+                // TODO: this button doesn't have an input in touch_profile.json
+              control_map = "/input/system/click";
               break;
             case OHMD_ANALOG_X:
               control_map = "/input/joystick/x";
@@ -552,7 +578,6 @@ public:
 
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ManufacturerName_String, m_sVendor.c_str());
         vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str() );
-        vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_RenderModelName_String, m_sModelNumber.c_str() );
         vr::VRProperties()->SetFloatProperty( m_ulPropertyContainer, Prop_UserIpdMeters_Float, m_flIPD );
         vr::VRProperties()->SetFloatProperty( m_ulPropertyContainer, Prop_UserHeadToEyeDepthMeters_Float, 0.f );
         vr::VRProperties()->SetFloatProperty( m_ulPropertyContainer, Prop_DisplayFrequency_Float, m_flDisplayFrequency );
