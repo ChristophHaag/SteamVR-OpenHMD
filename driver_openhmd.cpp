@@ -396,11 +396,23 @@ public:
 
 	// DriverLog("get controller %d pose %f %f %f %f, %f %f %f\n", index, quat[0], quat[1], quat[2], quat[3], pos[0], pos[1], pos[2]);
 
-	pose.qWorldFromDriverRotation = identityquat;
-	pose.qDriverFromHeadRotation = identityquat;
-	pose.vecDriverFromHeadTranslation[0] = 0.f;
-	pose.vecDriverFromHeadTranslation[1] = 0.f;
-	pose.vecDriverFromHeadTranslation[2] = 0.f;
+	for (int i = 0; i < 3; i++) {
+		pose.vecDriverFromHeadTranslation[i] = 0.0;
+		pose.vecWorldFromDriverTranslation[i] = 0.0;
+	}
+
+	if (m_is_oculus) {
+		const HmdQuaternion_t oculusOffsetQ  = { 0.966, 0.259, 0, 0};
+
+		pose.qDriverFromHeadRotation = oculusOffsetQ;
+		pose.qWorldFromDriverRotation = identityquat;
+
+		pose.vecDriverFromHeadTranslation[2] = 0.08;
+	}
+	else {
+		pose.qDriverFromHeadRotation = identityquat;
+		pose.qWorldFromDriverRotation = identityquat;
+	}
 
 	return pose;
     }
