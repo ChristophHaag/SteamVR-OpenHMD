@@ -1144,11 +1144,8 @@ void CServerDriver_OpenHMD::Cleanup()
     if (m_OpenHMDDeviceDriverControllerR)
       delete m_OpenHMDDeviceDriverControllerR;
 
-#if 0
-    // Disabled for now because the Rift camera thread sometimes hangs on shutdown...
     if (ctx)
         ohmd_ctx_destroy (ctx);
-#endif
 }
 
 
