@@ -605,29 +605,62 @@ public:
             eye_rotation[i] = EYE_ROTATION_NONE;
             DriverLog("eye_rotation %d: None\n", i);
           } else if (yaw > 85 && yaw < 95) {
-            eye_rotation[i] = EYE_ROTATION_LEFT;
-            DriverLog("eye_rotation %d: Left\n", i);
-          } else if (yaw > -95 && yaw < -85) {
             eye_rotation[i] = EYE_ROTATION_RIGHT;
             DriverLog("eye_rotation %d: Right\n", i);
+          } else if (yaw > -95 && yaw < -85) {
+            eye_rotation[i] = EYE_ROTATION_LEFT;
+            DriverLog("eye_rotation %d: Left\n", i);
           } else {
             eye_rotation[i] = EYE_ROTATION_180;
             DriverLog("eye_rotation %d: 180\n", i);
           }
         }
 
-        // quirk for device that doesn't have rotated display in openhmd
         const char *prod = ohmd_list_gets(ctx, hmddisplay_idx, OHMD_PRODUCT);
-        if (strcmp(prod, "VR-Tek WVR") == 0 && m_renderViewportWidth == 2560 &&
-            m_renderViewportHeight == 1440) {
+        bool add_delay = false;
+
+        if (strcmp(prod, "3Glasses-D3V2") == 0) {
           eye_rotation[0] = EYE_ROTATION_RIGHT;
           eye_rotation[1] = EYE_ROTATION_RIGHT;
-          DriverLog("Force eye_rotation: Right for %s\n", prod);
-          projection_matrix_rotated = false;
+          openhmd_projection_includes_rotation = false;
         }
 
-        /* Sleep for 1 second while activating to let the display connect */
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        if (strcmp(prod, "LGR100") == 0) {
+          // TODO: or the other way around?
+          eye_rotation[0] = EYE_ROTATION_RIGHT;
+          eye_rotation[1] = EYE_ROTATION_LEFT;
+          openhmd_projection_includes_rotation = true;
+        }
+
+        if (strcmp(prod, "Rift (DK2)") == 0) {
+          eye_rotation[0] = EYE_ROTATION_LEFT;
+          eye_rotation[1] = EYE_ROTATION_LEFT;
+          openhmd_projection_includes_rotation = false;
+        }
+
+        if (strcmp(prod, "Rift (CV1)") == 0) {
+          add_delay = true;
+        }
+
+        if (strcmp(prod, "Rift S") == 0) {
+          eye_rotation[0] = EYE_ROTATION_RIGHT;
+          eye_rotation[1] = EYE_ROTATION_RIGHT;
+          openhmd_projection_includes_rotation = false;
+          add_delay = true;
+        }
+
+        if (strcmp(prod, "VR-Tek WVR") == 0 && m_renderViewportWidth == 2560 &&
+            m_renderViewportHeight == 1440) {
+          eye_rotation[0] = EYE_ROTATION_LEFT;
+          eye_rotation[1] = EYE_ROTATION_LEFT;
+          DriverLog("Force eye_rotation: Left for %s\n", prod);
+          openhmd_projection_includes_rotation = false;
+        }
+
+        if (add_delay) {
+          /* Sleep for 1 second while activating to let the display connect */
+          std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
     }
 
     virtual ~COpenHMDDeviceDriver()
@@ -771,57 +804,6 @@ public:
                 *pnY);
     }
 
-    // flatten 2D indices in a 4x4 matrix explicit so it's easy to see what's happening:
-    int f1(int i, int j)
-    {
-        if (i == 0 && j == 0) return 0;
-        if (i == 0 && j == 1) return 1;
-        if (i == 0 && j == 2) return 2;
-        if (i == 0 && j == 3) return 3;
-
-        if (i == 1 && j == 0) return 4;
-        if (i == 1 && j == 1) return 5;
-        if (i == 1 && j == 2) return 6;
-        if (i == 1 && j == 3) return 7;
-
-        if (i == 2 && j == 0) return 8;
-        if (i == 2 && j == 1) return 9;
-        if (i == 2 && j == 2) return 10;
-        if (i == 2 && j == 3) return 11;
-
-        if (i == 3 && j == 0) return 12;
-        if (i == 3 && j == 1) return 13;
-        if (i == 3 && j == 2) return 14;
-        if (i == 3 && j == 3) return 15;
-
-        return -1;
-    }
-
-    int f2(int i, int j)
-    {
-        if (i == 0 && j == 0) return 0;
-        if (i == 0 && j == 1) return 4;
-        if (i == 0 && j == 2) return 8;
-        if (i == 0 && j == 3) return 12;
-
-        if (i == 1 && j == 0) return 1;
-        if (i == 1 && j == 1) return 5;
-        if (i == 1 && j == 2) return 9;
-        if (i == 1 && j == 3) return 13;
-
-        if (i == 2 && j == 0) return 2;
-        if (i == 2 && j == 1) return 6;
-        if (i == 2 && j == 2) return 10;
-        if (i == 2 && j == 3) return 14;
-
-        if (i == 3 && j == 0) return 3;
-        if (i == 3 && j == 1) return 7;
-        if (i == 3 && j == 2) return 11;
-        if (i == 3 && j == 3) return 15;
-
-        return -1;
-    }
-
     void columnMatrixToAngles(float *yaw, float *pitch, float *roll, float colMatrix[4][4] ) {
         double sinPitch, cosPitch, sinRoll, cosRoll, sinYaw, cosYaw;
 
@@ -863,35 +845,35 @@ public:
         }
     }
 
-    void createUnRotation(EyeRotation rotation, mat4x4f *m) {
+    void createProjectionRotation(EyeRotation rotation, mat4x4f *m) {
       memset(m, 0, sizeof(*m));
-      m->m[0][0] = 1.0f;
-      m->m[1][1] = 1.0f;
-      m->m[2][2] = 1.0f;
-      m->m[3][3] = 1.0f;
 
-      if (rotation == EYE_ROTATION_NONE) {
-        return;
-      }
+      switch(rotation) {
+        case EYE_ROTATION_NONE:
+          m->m[0][0] = 1.0f;
+          m->m[1][1] = 1.0f;
+          m->m[2][2] = 1.0f;
+          m->m[3][3] = 1.0f;
+          return;
 
-      else if (rotation == EYE_ROTATION_LEFT) {
-        m->m[0][0] = 0.0f;
-        m->m[0][1] = -1.0f;
-        m->m[1][0] = 1.0f;
-        m->m[1][1] = 0.0f;
-        m->m[0][1] = 1.0f;
-        m->m[1][0] = -1.0f;
-      }
+        // https://www.redcrab-software.com/en/Calculator/4x4/Matrix/Rotation-Z
+        case EYE_ROTATION_LEFT:
+          m->m[0][1] = 1.0f;
+          m->m[1][0] = -1.0f;
+          m->m[2][2] = 1.0f;
+          m->m[3][3] = 1.0f;
+          return;
 
-      else if (rotation == EYE_ROTATION_RIGHT) {
-        m->m[0][0] = 0.0f;
-        m->m[0][1] = -1.0f;
-        m->m[1][0] = 1.0f;
-        m->m[1][1] = 0.0f;
-      }
+        case EYE_ROTATION_RIGHT:
+          m->m[0][1] = 1.0f;
+          m->m[1][0] = -1.0f;
+          m->m[2][2] = 1.0f;
+          m->m[3][3] = 1.0f;
+          return;
 
-      else {
-        DriverLog("UNIMPLEMENTED ROTATION!!!\n");
+        default:
+          DriverLog("UNIMPLEMENTED ROTATION!!!\n");
+          return;
       }
     }
 
@@ -904,46 +886,55 @@ public:
             ohmd_device_getf(hmd, OHMD_RIGHT_EYE_GL_PROJECTION_MATRIX, ohmdprojection.arr);
         }
 
-        if (projection_matrix_rotated) {
-          mat4x4f unrotation;
-          createUnRotation(eye_rotation[eEye], &unrotation);
+        DriverLog("ohmdprojection\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
+        ohmdprojection.m[0][0], ohmdprojection.m[0][1], ohmdprojection.m[0][2], ohmdprojection.m[0][3],
+        ohmdprojection.m[1][0], ohmdprojection.m[1][1], ohmdprojection.m[1][2], ohmdprojection.m[1][3],
+        ohmdprojection.m[2][0], ohmdprojection.m[2][1], ohmdprojection.m[2][2], ohmdprojection.m[2][3],
+        ohmdprojection.m[3][0], ohmdprojection.m[3][1], ohmdprojection.m[3][2], ohmdprojection.m[3][3]);
 
-          DriverLog("unrotation\n%f %f %f %f\n%f %f %f %f %f\n%f %f %f %f\n%f "
-                    "%f %f %f\n",
-                    unrotation.arr[0], unrotation.arr[1], unrotation.arr[2],
-                    unrotation.arr[3], unrotation.arr[4], unrotation.arr[5],
-                    unrotation.arr[6], unrotation.arr[7], unrotation.arr[8],
-                    unrotation.arr[9], unrotation.arr[10], unrotation.arr[11],
-                    unrotation.arr[12], unrotation.arr[13], unrotation.arr[14],
-                    unrotation.arr[15]);
+        if (!openhmd_projection_includes_rotation) {
+          mat4x4f rotation;
+          createProjectionRotation(eye_rotation[eEye], &rotation);
 
-          omat4x4f_mult(&ohmdprojection, &unrotation, &ohmdprojection);
+          DriverLog("rotation matrix\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
+                    rotation.m[0][0], rotation.m[0][1], rotation.m[0][2], rotation.m[0][3],
+                    rotation.m[1][0], rotation.m[1][1], rotation.m[1][2], rotation.m[1][3],
+                    rotation.m[2][0], rotation.m[2][1], rotation.m[2][2], rotation.m[2][3],
+                    rotation.m[3][0], rotation.m[3][1], rotation.m[3][2], rotation.m[3][3]);
+
+          omat4x4f_mult(&ohmdprojection, &rotation, &ohmdprojection);
+          // omat4x4f_mult(&rotation, &ohmdprojection, &ohmdprojection);
+
+          DriverLog("ohmdprojection rotated\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
+          ohmdprojection.m[0][0], ohmdprojection.m[0][1], ohmdprojection.m[0][2], ohmdprojection.m[0][3],
+          ohmdprojection.m[1][0], ohmdprojection.m[1][1], ohmdprojection.m[1][2], ohmdprojection.m[1][3],
+          ohmdprojection.m[2][0], ohmdprojection.m[2][1], ohmdprojection.m[2][2], ohmdprojection.m[2][3],
+          ohmdprojection.m[3][0], ohmdprojection.m[3][1], ohmdprojection.m[3][2], ohmdprojection.m[3][3]);
         }
 
+
         // http://stackoverflow.com/questions/10830293/ddg#12926655
+        // but switched indices per comment
+
         // get projection matrix from openhmd, convert it into lrtb + near,far with SO formula
         // then divide by near plane distance to get the tangents of the angles from the center plane (tan = opposite side = these values divided by adjacent side = near plane distance)
         // but negate top and bottom. who knows why. there are 3 or so issues for it on github
 
-        // f2 switches row-major and column-major
-        float m00 = ohmdprojection.arr[f2(0,0)];
-        //float m03 = ohmdprojection[f2(0,3)];
-        //float m10 = ohmdprojection[f2(1,3)];
-        float m11 = ohmdprojection.arr[f2(1,1)];
-        //float m13 = ohmdprojection[f2(1,3)];
-        float m23 = ohmdprojection.arr[f2(2,3)];
-        float m22 = ohmdprojection.arr[f2(2,2)];
-        float m12 = ohmdprojection.arr[f2(1,2)];
-        float m02 = ohmdprojection.arr[f2(0,2)];
+        float m00 = ohmdprojection.m[0][0];
+        float m11 = ohmdprojection.m[1][1];
+        float m32 = ohmdprojection.m[3][2];
+        float m22 = ohmdprojection.m[2][2];
+        float m21 = ohmdprojection.m[2][1];
+        float m20 = ohmdprojection.m[2][0];
 
-        float near   = m23/(m22-1);
-        float far    = m23/(m22+1);
-        *pfBottom = -   (m12-1)/m11;
-        *pfTop    = -   (m12+1)/m11;
-        *pfLeft   =     (m02-1)/m00;
-        *pfRight  =     (m02+1)/m00;
+        float near   = m32/(m22-1);
+        float far    = m32/(m22+1);
+        *pfBottom = -   (m21-1)/m11;
+        *pfTop    = -   (m21+1)/m11;
+        *pfLeft   =     (m20-1)/m00;
+        *pfRight  =     (m20+1)/m00;
         
-        DriverLog("m 00 %f, 11 %f, 22 %f, 12 %f, 02 %f\n", m00, m11, m23, m22, m12, m02);
+        DriverLog("m00 %f, m11 %f, m32 %f, m22 %f, m21 %f m20 %f\n", m00, m11, m32, m22, m21, m20);
 
         DriverLog("ohmd projection\n%f %f %f %f\n%f %f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
             ohmdprojection.arr[0], ohmdprojection.arr[1], ohmdprojection.arr[2], ohmdprojection.arr[3],
@@ -1130,7 +1121,7 @@ private:
     // openhmd usually encodes the display rotation into the projection matrix.
     // but there might also be devices where we support rotated display and
     // openhmd doesn't have that yet. example: vrtek wvr2
-    bool projection_matrix_rotated = true;
+    bool openhmd_projection_includes_rotation = true;
 };
 
 //-----------------------------------------------------------------------------
