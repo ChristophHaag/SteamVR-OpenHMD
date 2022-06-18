@@ -35,7 +35,7 @@ fi
 if [ -f "$CURRENTCONFIG" ]; then
 	echo "Found config in $CURRENTCONFIG"
 	echo "Backing up current config to $BACKUPDIR..."
-	mv "$CURRENTCONFIG" "$BACKUPDIR"
+	mv --backup=t "$CURRENTCONFIG" "$BACKUPDIR" 
 	echo "Backed up config!"
 fi
 
