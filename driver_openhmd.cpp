@@ -40,6 +40,13 @@ ohmd_context* ctx;
 
 class COpenHMDDeviceDriverController;
 
+enum EyeRotation {
+  EYE_ROTATION_UNKNOWN,
+  EYE_ROTATION_NONE,
+  EYE_ROTATION_LEFT,
+  EYE_ROTATION_RIGHT,
+  EYE_ROTATION_180,
+};
 
 // gets float values from the device and prints them
 void print_infof(ohmd_device* hmd, const char* name, int len, ohmd_float_value val)
@@ -489,9 +496,9 @@ public:
     {
         hmd = ohmd_list_open_device(ctx, hmddisplay_idx);
         if (hmdtracker_idx != -1 && hmdtracker_idx != hmddisplay_idx)
-	    hmdtracker = ohmd_list_open_device(ctx, hmdtracker_idx);
-	else
-	    hmdtracker = NULL;
+          hmdtracker = ohmd_list_open_device(ctx, hmdtracker_idx);
+        else
+          hmdtracker = NULL;
 
         if(!hmd){
             DriverLog("failed to open device: %s\n", ohmd_ctx_get_error(ctx));
@@ -542,16 +549,18 @@ public:
         if (vendor_override) {
             m_sVendor = vendor_override;
         } else {
-            m_sVendor = ohmd_list_gets(ctx, hmddisplay_idx, OHMD_VENDOR);
-            if (m_sVendor.find(' ') != std::string::npos) {
-                m_sVendor = m_sVendor.substr(0, m_sVendor.find(' '));
+          m_sVendor = ohmd_list_gets(ctx, hmddisplay_idx, OHMD_VENDOR);
+          if (m_sVendor.find(' ') != std::string::npos) {
+            m_sVendor = m_sVendor.substr(0, m_sVendor.find(' '));
             }
         }
 
         m_nWindowX = 1920; //TODO: real window offset
         m_nWindowY = 0;
-        ohmd_device_geti(hmd, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &m_nWindowWidth);
-        ohmd_device_geti(hmd, OHMD_SCREEN_VERTICAL_RESOLUTION, &m_nWindowHeight );
+        ohmd_device_geti(hmd, OHMD_SCREEN_HORIZONTAL_RESOLUTION,
+                         &m_renderViewportWidth);
+        ohmd_device_geti(hmd, OHMD_SCREEN_VERTICAL_RESOLUTION,
+                         &m_renderViewportHeight);
         ohmd_device_geti(hmd, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &m_nRenderWidth);
         ohmd_device_geti(hmd, OHMD_SCREEN_VERTICAL_RESOLUTION, &m_nRenderHeight );
         //m_nRenderWidth /= 2;
@@ -564,7 +573,8 @@ public:
         DriverLog( "driver_openhmd: Vendor: %s\n", m_sVendor.c_str() );
         DriverLog( "driver_openhmd: Serial Number: %s\n", m_sSerialNumber.c_str() );
         DriverLog( "driver_openhmd: Model Number: %s\n", m_sModelNumber.c_str() );
-        DriverLog( "driver_openhmd: Window: %d %d %d %d\n", m_nWindowX, m_nWindowY, m_nWindowWidth, m_nWindowHeight );
+        DriverLog("driver_openhmd: Render Viewport: %d %d %d %d\n", m_nWindowX,
+                  m_nWindowY, m_renderViewportWidth, m_renderViewportHeight);
         DriverLog( "driver_openhmd: Render Target: %d %d\n", m_nRenderWidth, m_nRenderHeight );
         DriverLog( "driver_openhmd: Seconds from Vsync to Photons: %f\n", m_flSecondsFromVsyncToPhotons );
                                                 DriverLog( "driver_openhmd: Display Frequency: %f\n", m_flDisplayFrequency );
@@ -574,8 +584,83 @@ public:
         ohmd_device_getf(hmd, OHMD_UNIVERSAL_DISTORTION_K, &(distortion_coeffs[0]));
         DriverLog("driver_openhmd: Distortion values a=%f b=%f c=%f d=%f\n", distortion_coeffs[0], distortion_coeffs[1], distortion_coeffs[2], distortion_coeffs[3]);
 
-	/* Sleep for 1 second while activating to let the display connect */
-	std::this_thread::sleep_for( std::chrono::seconds(1) );
+        for (int i = 0; i < 2; i++) {
+          mat4x4f ohmdprojection;
+          if (i == Eye_Left) {
+            ohmd_device_getf(hmd, OHMD_LEFT_EYE_GL_PROJECTION_MATRIX,
+                             ohmdprojection.arr);
+          } else if (i == Eye_Right) {
+            ohmd_device_getf(hmd, OHMD_RIGHT_EYE_GL_PROJECTION_MATRIX,
+                             ohmdprojection.arr);
+          } else {
+            break;
+          }
+
+          float yaw, pitch, roll;
+          float p[4][4];
+          memcpy(p, ohmdprojection.arr, 16 * sizeof(float));
+          columnMatrixToAngles(&yaw, &pitch, &roll, p);
+
+          if (yaw > -5 && yaw < 5) {
+            eye_rotation[i] = EYE_ROTATION_NONE;
+            DriverLog("eye_rotation %d: None\n", i);
+          } else if (yaw > 85 && yaw < 95) {
+            eye_rotation[i] = EYE_ROTATION_RIGHT;
+            DriverLog("eye_rotation %d: Right\n", i);
+          } else if (yaw > -95 && yaw < -85) {
+            eye_rotation[i] = EYE_ROTATION_LEFT;
+            DriverLog("eye_rotation %d: Left\n", i);
+          } else {
+            eye_rotation[i] = EYE_ROTATION_180;
+            DriverLog("eye_rotation %d: 180\n", i);
+          }
+        }
+
+        const char *prod = ohmd_list_gets(ctx, hmddisplay_idx, OHMD_PRODUCT);
+        bool add_delay = false;
+
+        if (strcmp(prod, "3Glasses-D3V2") == 0) {
+          eye_rotation[0] = EYE_ROTATION_RIGHT;
+          eye_rotation[1] = EYE_ROTATION_RIGHT;
+          openhmd_projection_includes_rotation = false;
+        }
+
+        if (strcmp(prod, "LGR100") == 0) {
+          // TODO: or the other way around?
+          eye_rotation[0] = EYE_ROTATION_RIGHT;
+          eye_rotation[1] = EYE_ROTATION_LEFT;
+          openhmd_projection_includes_rotation = true;
+        }
+
+        if (strcmp(prod, "Rift (DK2)") == 0) {
+          eye_rotation[0] = EYE_ROTATION_LEFT;
+          eye_rotation[1] = EYE_ROTATION_LEFT;
+          openhmd_projection_includes_rotation = false;
+        }
+
+        if (strcmp(prod, "Rift (CV1)") == 0) {
+          add_delay = true;
+        }
+
+        if (strcmp(prod, "Rift S") == 0) {
+          eye_rotation[0] = EYE_ROTATION_RIGHT;
+          eye_rotation[1] = EYE_ROTATION_RIGHT;
+          openhmd_projection_includes_rotation = false;
+          add_delay = true;
+        }
+
+        if (strcmp(prod, "VR-Tek WVR") == 0 && m_renderViewportWidth == 2560 &&
+            m_renderViewportHeight == 1440) {
+          eye_rotation[0] = EYE_ROTATION_LEFT;
+          eye_rotation[1] = EYE_ROTATION_LEFT;
+          DriverLog("Force eye_rotation: Left for %s\n", prod);
+          openhmd_projection_includes_rotation = false;
+        }
+
+        if (add_delay) {
+          /* Sleep for 1 second while activating to let the display connect */
+          std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
     }
 
     virtual ~COpenHMDDeviceDriver()
@@ -633,10 +718,24 @@ public:
 
     void GetWindowBounds( int32_t *pnX, int32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight )
     {
-        *pnX = m_nWindowX;
-        *pnY = m_nWindowY;
-        *pnWidth = m_nWindowWidth;
-        *pnHeight = m_nWindowHeight;
+      // return display bounds, e.g. DK2 1080x1920 = rotated viewport dims
+
+      *pnX = m_nWindowX;
+      *pnY = m_nWindowY;
+
+      // TODO: weird configurations like left eye unrotated, right eye 90°?
+      if (eye_rotation[Eye_Left] == EYE_ROTATION_NONE ||
+          eye_rotation[Eye_Left] == EYE_ROTATION_180) {
+        *pnWidth = m_renderViewportWidth;
+        *pnHeight = m_renderViewportHeight;
+      } else if (eye_rotation[Eye_Left] == EYE_ROTATION_LEFT ||
+                 eye_rotation[Eye_Left] == EYE_ROTATION_RIGHT) {
+        *pnWidth = m_renderViewportHeight;
+        *pnHeight = m_renderViewportWidth;
+      }
+
+      DriverLog("OutputViewport Bounds (GetWindowBounds) %dx%d at %d,%d\n",
+                *pnWidth, *pnHeight, *pnX, *pnY);
     }
 
     bool IsDisplayOnDesktop()
@@ -657,69 +756,52 @@ public:
 
     void GetEyeOutputViewport( EVREye eEye, uint32_t *pnX, uint32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight )
     {
+      // ouputViewport dims on display coordinates e.g. on DK2 on a 1080x1920
+      // display
+
+      if (eye_rotation[eEye] == EYE_ROTATION_NONE) {
         *pnY = 0;
-        *pnWidth = m_nWindowWidth / 2;
-        *pnHeight = m_nWindowHeight;
+        *pnWidth = m_renderViewportWidth / 2;
+        *pnHeight = m_renderViewportHeight;
 
-        if ( eEye == Eye_Left )
-        {
-            *pnX = 0;
+        if (eEye == Eye_Left) {
+          *pnX = 0;
+        } else {
+          *pnX = m_renderViewportWidth / 2;
         }
-        else
-        {
-            *pnX = m_nWindowWidth / 2;
+      } else if (eye_rotation[eEye] == EYE_ROTATION_LEFT) {
+        uint32_t outputViewportWidth = m_renderViewportHeight;
+        uint32_t outputViewportHeight = m_renderViewportWidth;
+
+        // assume whole display is rotated left or right
+        *pnX = 0;
+        *pnWidth = outputViewportWidth;
+        *pnHeight = outputViewportHeight / 2;
+
+        if (eEye == Eye_Right) {
+          *pnY = 0;
+        } else {
+          *pnY = outputViewportHeight / 2;
         }
-    }
+      } else if (eye_rotation[eEye] == EYE_ROTATION_RIGHT) {
+        uint32_t outputViewportWidth = m_renderViewportHeight;
+        uint32_t outputViewportHeight = m_renderViewportWidth;
 
-    // flatten 2D indices in a 4x4 matrix explicit so it's easy to see what's happening:
-    int f1(int i, int j)
-    {
-        if (i == 0 && j == 0) return 0;
-        if (i == 0 && j == 1) return 1;
-        if (i == 0 && j == 2) return 2;
-        if (i == 0 && j == 3) return 3;
+        // assume whole display is rotated left or right
+        *pnY = 0;
+        *pnWidth = outputViewportWidth;
+        *pnHeight = outputViewportHeight / 2;
 
-        if (i == 1 && j == 0) return 4;
-        if (i == 1 && j == 1) return 5;
-        if (i == 1 && j == 2) return 6;
-        if (i == 1 && j == 3) return 7;
+        if (eEye == Eye_Left) {
+          *pnY = 0;
+        } else {
+          *pnY = outputViewportHeight / 2;
+        }
+      }
 
-        if (i == 2 && j == 0) return 8;
-        if (i == 2 && j == 1) return 9;
-        if (i == 2 && j == 2) return 10;
-        if (i == 2 && j == 3) return 11;
-
-        if (i == 3 && j == 0) return 12;
-        if (i == 3 && j == 1) return 13;
-        if (i == 3 && j == 2) return 14;
-        if (i == 3 && j == 3) return 15;
-
-        return -1;
-    }
-
-    int f2(int i, int j)
-    {
-        if (i == 0 && j == 0) return 0;
-        if (i == 0 && j == 1) return 4;
-        if (i == 0 && j == 2) return 8;
-        if (i == 0 && j == 3) return 12;
-
-        if (i == 1 && j == 0) return 1;
-        if (i == 1 && j == 1) return 5;
-        if (i == 1 && j == 2) return 9;
-        if (i == 1 && j == 3) return 13;
-
-        if (i == 2 && j == 0) return 2;
-        if (i == 2 && j == 1) return 6;
-        if (i == 2 && j == 2) return 10;
-        if (i == 2 && j == 3) return 14;
-
-        if (i == 3 && j == 0) return 3;
-        if (i == 3 && j == 1) return 7;
-        if (i == 3 && j == 2) return 11;
-        if (i == 3 && j == 3) return 15;
-
-        return -1;
+      DriverLog("OutputViewport bounds (%s) %dx%d at %d,%d\n",
+                eEye == Eye_Left ? "left" : "right", *pnWidth, *pnHeight, *pnX,
+                *pnY);
     }
 
     void columnMatrixToAngles(float *yaw, float *pitch, float *roll, float colMatrix[4][4] ) {
@@ -762,32 +844,37 @@ public:
             o->m[i][3] = a0 * r->m[0][3] + a1 * r->m[1][3] + a2 * r->m[2][3] + a3 * r->m[3][3];
         }
     }
-    
-    void createUnRotation(float angle, mat4x4f *m) {
-        memset(m, 0, sizeof(*m));
-        m->m[0][0] = 1.0f;
-        m->m[1][1] = 1.0f;
-        m->m[2][2] = 1.0f;
-        m->m[3][3] = 1.0f;
-        
-        DriverLog("Unrotating for angle %f\n", angle);
-        
-        if (angle > -5 && angle < 5) {
-            return;
-        }
-        
-        else if (angle > 85 && angle < 95) {
-            m->m[0][0] = 0.0f; m->m[0][1] = -1.0f; m->m[1][0] = 1.0f; m->m[1][1] = 0.0f;
-            m->m[0][1] = 1.0f; m->m[1][0] = -1.0f;
-        }
 
-        else if (angle > -95 && angle < -85) {
-            m->m[0][0] = 0.0f; m->m[0][1] = -1.0f; m->m[1][0] = 1.0f; m->m[1][1] = 0.0f;
-        }
-        
-        else {
-            DriverLog("UNIMPLEMENTED ROTATION!!!\n");
-        }
+    void createProjectionRotation(EyeRotation rotation, mat4x4f *m) {
+      memset(m, 0, sizeof(*m));
+
+      switch(rotation) {
+        case EYE_ROTATION_NONE:
+          m->m[0][0] = 1.0f;
+          m->m[1][1] = 1.0f;
+          m->m[2][2] = 1.0f;
+          m->m[3][3] = 1.0f;
+          return;
+
+        // https://www.redcrab-software.com/en/Calculator/4x4/Matrix/Rotation-Z
+        case EYE_ROTATION_LEFT:
+          m->m[0][1] = 1.0f;
+          m->m[1][0] = -1.0f;
+          m->m[2][2] = 1.0f;
+          m->m[3][3] = 1.0f;
+          return;
+
+        case EYE_ROTATION_RIGHT:
+          m->m[0][1] = 1.0f;
+          m->m[1][0] = -1.0f;
+          m->m[2][2] = 1.0f;
+          m->m[3][3] = 1.0f;
+          return;
+
+        default:
+          DriverLog("UNIMPLEMENTED ROTATION!!!\n");
+          return;
+      }
     }
 
     void GetProjectionRaw( EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom )
@@ -799,52 +886,55 @@ public:
             ohmd_device_getf(hmd, OHMD_RIGHT_EYE_GL_PROJECTION_MATRIX, ohmdprojection.arr);
         }
 
-        float yaw, pitch, roll;
-        float p[4][4];
-        memcpy(p, ohmdprojection.arr, 16 * sizeof(float));
-        columnMatrixToAngles(&yaw, &pitch, &roll, p);
-        
-        if (eEye == Eye_Left) {
-            rotation_left = yaw;
-        } else {
-            rotation_right = yaw;
+        DriverLog("ohmdprojection\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
+        ohmdprojection.m[0][0], ohmdprojection.m[0][1], ohmdprojection.m[0][2], ohmdprojection.m[0][3],
+        ohmdprojection.m[1][0], ohmdprojection.m[1][1], ohmdprojection.m[1][2], ohmdprojection.m[1][3],
+        ohmdprojection.m[2][0], ohmdprojection.m[2][1], ohmdprojection.m[2][2], ohmdprojection.m[2][3],
+        ohmdprojection.m[3][0], ohmdprojection.m[3][1], ohmdprojection.m[3][2], ohmdprojection.m[3][3]);
+
+        if (!openhmd_projection_includes_rotation) {
+          mat4x4f rotation;
+          createProjectionRotation(eye_rotation[eEye], &rotation);
+
+          DriverLog("rotation matrix\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
+                    rotation.m[0][0], rotation.m[0][1], rotation.m[0][2], rotation.m[0][3],
+                    rotation.m[1][0], rotation.m[1][1], rotation.m[1][2], rotation.m[1][3],
+                    rotation.m[2][0], rotation.m[2][1], rotation.m[2][2], rotation.m[2][3],
+                    rotation.m[3][0], rotation.m[3][1], rotation.m[3][2], rotation.m[3][3]);
+
+          omat4x4f_mult(&ohmdprojection, &rotation, &ohmdprojection);
+          // omat4x4f_mult(&rotation, &ohmdprojection, &ohmdprojection);
+
+          DriverLog("ohmdprojection rotated\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
+          ohmdprojection.m[0][0], ohmdprojection.m[0][1], ohmdprojection.m[0][2], ohmdprojection.m[0][3],
+          ohmdprojection.m[1][0], ohmdprojection.m[1][1], ohmdprojection.m[1][2], ohmdprojection.m[1][3],
+          ohmdprojection.m[2][0], ohmdprojection.m[2][1], ohmdprojection.m[2][2], ohmdprojection.m[2][3],
+          ohmdprojection.m[3][0], ohmdprojection.m[3][1], ohmdprojection.m[3][2], ohmdprojection.m[3][3]);
         }
-        
-        mat4x4f unrotation;
-        createUnRotation(yaw, &unrotation);
- 
-        DriverLog("unrotation\n%f %f %f %f\n%f %f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
-            unrotation.arr[0], unrotation.arr[1], unrotation.arr[2], unrotation.arr[3],
-            unrotation.arr[4], unrotation.arr[5], unrotation.arr[6], unrotation.arr[7],
-            unrotation.arr[8], unrotation.arr[9], unrotation.arr[10], unrotation.arr[11],
-            unrotation.arr[12], unrotation.arr[13], unrotation.arr[14], unrotation.arr[15]);
-            
-        omat4x4f_mult(&ohmdprojection, &unrotation, &ohmdprojection);
-        
+
+
         // http://stackoverflow.com/questions/10830293/ddg#12926655
+        // but switched indices per comment
+
         // get projection matrix from openhmd, convert it into lrtb + near,far with SO formula
         // then divide by near plane distance to get the tangents of the angles from the center plane (tan = opposite side = these values divided by adjacent side = near plane distance)
         // but negate top and bottom. who knows why. there are 3 or so issues for it on github
 
-        // f2 switches row-major and column-major
-        float m00 = ohmdprojection.arr[f2(0,0)];
-        //float m03 = ohmdprojection[f2(0,3)];
-        //float m10 = ohmdprojection[f2(1,3)];
-        float m11 = ohmdprojection.arr[f2(1,1)];
-        //float m13 = ohmdprojection[f2(1,3)];
-        float m23 = ohmdprojection.arr[f2(2,3)];
-        float m22 = ohmdprojection.arr[f2(2,2)];
-        float m12 = ohmdprojection.arr[f2(1,2)];
-        float m02 = ohmdprojection.arr[f2(0,2)];
+        float m00 = ohmdprojection.m[0][0];
+        float m11 = ohmdprojection.m[1][1];
+        float m32 = ohmdprojection.m[3][2];
+        float m22 = ohmdprojection.m[2][2];
+        float m21 = ohmdprojection.m[2][1];
+        float m20 = ohmdprojection.m[2][0];
 
-        float near   = m23/(m22-1);
-        float far    = m23/(m22+1);
-        *pfBottom = -   (m12-1)/m11;
-        *pfTop    = -   (m12+1)/m11;
-        *pfLeft   =     (m02-1)/m00;
-        *pfRight  =     (m02+1)/m00;
+        float near   = m32/(m22-1);
+        float far    = m32/(m22+1);
+        *pfBottom = -   (m21-1)/m11;
+        *pfTop    = -   (m21+1)/m11;
+        *pfLeft   =     (m20-1)/m00;
+        *pfRight  =     (m20+1)/m00;
         
-        DriverLog("m 00 %f, 11 %f, 22 %f, 12 %f, 02 %f\n", m00, m11, m23, m22, m12, m02);
+        DriverLog("m00 %f, m11 %f, m32 %f, m22 %f, m21 %f m20 %f\n", m00, m11, m32, m22, m21, m20);
 
         DriverLog("ohmd projection\n%f %f %f %f\n%f %f %f %f %f\n%f %f %f %f\n%f %f %f %f\n",
             ohmdprojection.arr[0], ohmdprojection.arr[1], ohmdprojection.arr[2], ohmdprojection.arr[3],
@@ -860,26 +950,24 @@ public:
 
     DistortionCoordinates_t ComputeDistortion( EVREye eEye, float fU, float fV )
     {
-        float angle = (eEye == Eye_Left ? rotation_left : rotation_right);
-        
         //DriverLog("Eye %d before: %f %f\n", eEye, fU, fV);
-                
-        if (angle > -5 && angle < 5) {
-        } else if (angle > 85 && angle < 95) {
-            float tmp = fV;
-            fV = 1. - fU;
-            fU = tmp;
-        } else if (angle > -95 && angle < -85) {
-            float tmp = fV;
-            fV = fU;
-            fU = 1.f - tmp;
+
+        if (eye_rotation[eEye] == EYE_ROTATION_NONE) {
+        } else if (eye_rotation[eEye] == EYE_ROTATION_LEFT) {
+          float tmp = fV;
+          fV = 1. - fU;
+          fU = tmp;
+        } else if (eye_rotation[eEye] == EYE_ROTATION_RIGHT) {
+          float tmp = fV;
+          fV = fU;
+          fU = 1.f - tmp;
         } else {
-            float x = 0 * fU + -1 * fV;
-            float y = -1 * fU + 0 * 0 * fV;
-            fU = x;
-            fV = y;
+          float x = 0 * fU + -1 * fV;
+          float y = -1 * fU + 0 * 0 * fV;
+          fU = x;
+          fV = y;
         }
-        
+
         //DriverLog("Eye %d after: %f %f\n", eEye, fU, fV);
         
         int hmd_w;
@@ -1013,18 +1101,27 @@ private:
     std::string m_sSerialNumber;
     std::string m_sModelNumber;
 
+    // offset where to display the compositor. Only relevant in extended mode.
     int32_t m_nWindowX;
     int32_t m_nWindowY;
-    int32_t m_nWindowWidth;
-    int32_t m_nWindowHeight;
+
+    // OHMD_SCREEN_HORIZONTAL_RESOLUTION, OHMD_SCREEN_VERTICAL_RESOLUTION
+    // The viewport as seen by the user. e.g. DK2 1920x1080
+    int32_t m_renderViewportWidth;
+    int32_t m_renderViewportHeight;
+
     int32_t m_nRenderWidth;
     int32_t m_nRenderHeight;
     float m_flSecondsFromVsyncToPhotons;
     float m_flDisplayFrequency;
     float m_flIPD;
-    
-    float rotation_left = 0.0;
-    float rotation_right = 0.0;
+
+    EyeRotation eye_rotation[2] = {EYE_ROTATION_UNKNOWN, EYE_ROTATION_UNKNOWN};
+
+    // openhmd usually encodes the display rotation into the projection matrix.
+    // but there might also be devices where we support rotated display and
+    // openhmd doesn't have that yet. example: vrtek wvr2
+    bool openhmd_projection_includes_rotation = true;
 };
 
 //-----------------------------------------------------------------------------
