@@ -135,6 +135,8 @@ This defines 4 openhmd devices.
 
 If the config file is not available (probably only works on linux), default values are used. Change them in ohmd_config.h.
 
+There is also the option `autodetect 1` which enables autodetection (enabled if you have no config file, and normally disabled if you have a config file). Disabling autodetection is important because you may or may not wish the OpenHMD "null" controllers to be present.
+
 ### Gaze Pointer with gamepad
 
 At least SteamVR Home supports controller based navigation, however it is only enabled when the Manufacturer string provided by the plugin is "Oculus".
